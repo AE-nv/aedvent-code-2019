@@ -17,8 +17,6 @@ func abs(val int) int{
     if val < 0 { return -val }
     return val
 }
-
-
 func parseInput(input string) []*Moon{
     lines := strings.Split(input, "\n")
     moons := make([]*Moon, 0, len(lines))
@@ -41,8 +39,6 @@ func parseInput(input string) []*Moon{
     return moons
 }
 
-
-
 type Moon struct{
     x,y,z int
     dx, dy, dz int
@@ -60,25 +56,6 @@ func (m Moon) totalEnergy() int{
 
     return potential * kinetic
 }
-func (m Moon) hash() string{
-    value := strconv.Itoa(m.x) + "|"
-    value += strconv.Itoa(m.y) + "|"
-    value += strconv.Itoa(m.z) + "|"
-    value += strconv.Itoa(m.dx) + "|"
-    value += strconv.Itoa(m.dy) + "|"
-    value += strconv.Itoa(m.dz)
-    return value
-}
-
-
-func hash(moons []*Moon) string {
-    value := ""
-    for _, moon := range moons {
-        value += "><" + moon.hash()
-    }
-    return value
-}
-
 
 func part1(input string, steps int) int{
     moons := parseInput(input)
@@ -121,18 +98,13 @@ func part1(input string, steps int) int{
 func search(input string) int {
     moons := parseInput(input)
 
-    hash_value := hash(moons)
-    seen := map[string]bool{
-        hash_value: true,
-    }
-    fmt.Println(hash_value)
-
     step := 0
     for true {
         step++
         for i, moona := range moons {
             for j, moonb := range moons {
                 if i == j { continue }
+
                 if moona.x > moonb.x {
                     moona.dx--
                 } else if moona.x < moonb.x {
@@ -154,11 +126,19 @@ func search(input string) int {
         }
 
         for _, moon := range moons { moon.move() }
-        hash_value = hash(moons)
-        if _, ex := seen[hash_value]; ex {
-            return step
+
+        x := 0; for x < len(moons) && moons[x].dx == 0 { x++ }
+        y := 0; for y < len(moons) && moons[y].dy == 0 { y++ }
+        z := 0; for z < len(moons) && moons[z].dz == 0 { z++ }
+
+        if x == len(moons) { fmt.Println(step, "x") }
+        if y == len(moons) { fmt.Println(step, "y") }
+        if z == len(moons) { fmt.Println(step, "z") }
+
+        if x == len(moons) && y == len(moons) && z == len(moons){
+            break
         }
-        seen[hash_value] = true
+
     }
     return step
 }
@@ -171,26 +151,47 @@ func main(){
 <x=2, y=-10, z=-7>
 <x=4, y=-8, z=8>
 <x=3, y=5, z=-1>`
+    fmt.Println(input)
     fmt.Println(part1(input, 10))
+    fmt.Println()
 
     input = ` <x=-8, y=-10, z=0>
 <x=5, y=5, z=10>
 <x=2, y=-7, z=3>
 <x=9, y=-8, z=-3>`
+    fmt.Println(input)
     fmt.Println(part1(input, 100))
+    fmt.Println()
 
 
     input = readInput("input.txt")
+    fmt.Println(input)
     fmt.Println(part1(input, 1000))
+    fmt.Println()
 
 
     input = `<x=-1, y=0, z=2>
 <x=2, y=-10, z=-7>
 <x=4, y=-8, z=8>
 <x=3, y=5, z=-1>`
+    fmt.Println(input)
     fmt.Println(search(input))
+    fmt.Println()
 
     input = readInput("input.txt")
+    fmt.Println(input)
     fmt.Println(search(input))
+    fmt.Println()
 
+    //part 2
+    //symmetry in operations, one further away slows down, one closer moves faster => once they reach eachother they switch, and other one speeds and slows => halfway we get a velocity 0 point
+    //each dimension is independantly from eachother => model seperately
+    //solution: 2*LCM (x,y,z)
+    //see reddit also
+    //https://www.calculatorsoup.com/calculators/math/lcm.php
+    period_x := 93014
+    period_y := 134148
+    period_z := 51178
+    lcm := 159645191490204
+    solution := 2*lcm //solution := 319290382980408
 }
