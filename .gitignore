@@ -42,3 +42,7 @@ packages/
 *.dyn_o
 *.dyn_hi
 *.exe
+
+#Paket dependency manager
+.paket/
+paket-files/
