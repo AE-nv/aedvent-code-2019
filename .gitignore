@@ -9,6 +9,7 @@
 *.userosscache
 *.sln.docstates
 *.vcxproj.filters
+*.prettierrc
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -45,3 +46,7 @@ packages/
 #Paket dependency manager
 paket.exe
 paket-files/
+
+# npm stuff
+node_modules/
+package-lock.json
