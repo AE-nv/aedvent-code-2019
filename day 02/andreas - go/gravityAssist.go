@@ -22,54 +22,95 @@ func parseInput(input string) []int{
     return codes
 }
 
-func add(data []int, pos int) []int {
+func add(data []int, pos int) ([]int, bool) {
     pos_a := data[pos+1]
+    if pos_a >= len(data) { return data, false }
+
     pos_b := data[pos+2]
+    if pos_b >= len(data) { return data, false }
+
     pos_result := data[pos+3]
+    if pos_result >= len(data) { return data, false }
+
     data[pos_result] = data[pos_a] + data[pos_b]
 
-    return data
+    return data, true
 }
 
-func multiply(data []int, pos int) []int {
+func multiply(data []int, pos int) ([]int, bool) {
     pos_a := data[pos+1]
+    if pos_a >= len(data) { return data, false }
+
     pos_b := data[pos+2]
+    if pos_b >= len(data) { return data, false }
+
     pos_result := data[pos+3]
+    if pos_result >= len(data) { return data, false }
+
     data[pos_result] = data[pos_a] * data[pos_b]
 
-    return data
+    return data, true
 }
 
-func run(data []int){
-    for pos, value := 0, data[0]; value != 99 ; value = data[pos] {
+func run(data []int) ([]int, bool) {
+    ok := true
+    for pos, value := 0, data[0]; ok && value != 99 ; value = data[pos] {
         if value == 1 {
-            data = add(data, pos)
+            data, ok = add(data, pos)
         } else if value == 2 {
-            data = multiply(data, pos)
+            data, ok = multiply(data, pos)
         }
         pos += 4
     }
-
-    fmt.Println(data)
+    return data, ok
 }
 
 
+func search(data []int, noun,verb int) (int, bool){
+    data[1] = noun
+    data[2] = verb
+    result, ok := run(data)
+    return  result[0], ok
+}
+
+
+func part1(){
+    result, ok := run(parseInput("1,9,10,3,2,3,11,0,99,30,40,50"))
+    fmt.Println(result, ok)
+    result, ok = run(parseInput("1,0,0,0,99"))
+    fmt.Println(result, ok)
+    result, ok = run(parseInput("2,3,0,3,99"))
+    fmt.Println(result, ok)
+    result, ok = run(parseInput("2,4,4,5,99,0"))
+    fmt.Println(result, ok)
+    result, ok = run(parseInput("1,1,1,4,99,5,6,0,99"))
+
+    data := parseInput(readInput("input.txt"))
+    final, _ := search(data, 12, 2)
+    fmt.Println(final)
+}
+
+func part2() (int, int){
+    src_data := parseInput(readInput("input.txt"))
+    data := make([]int, len(src_data))
+
+    for noun := 0; noun < 100; noun++ {
+        for verb := 0; verb < 100; verb++{
+            copy(data, src_data) //create fresh copy
+
+            result, ok := search(data, noun, verb)
+            if ok && result == 19690720 {
+                return noun, verb
+            }
+        }
+    }
+    return -1, -1
+}
+
+
+
 func main(){
-
-    input := "1,9,10,3,2,3,11,0,99,30,40,50"
-    data := parseInput(input)
-    run(data)
-
-    run(parseInput("1,0,0,0,99"))
-    run(parseInput("2,3,0,3,99"))
-    run(parseInput("2,4,4,5,99,0"))
-    run(parseInput("1,1,1,4,99,5,6,0,99"))
-
-
-    fname := "input.txt"
-    input = readInput(fname)
-    data = parseInput(input)
-    data[1] = 12
-    data[2] = 2
-    run(data)
+    part1()
+    noun, verb := part2()
+    fmt.Println( noun*100+verb)
 }
