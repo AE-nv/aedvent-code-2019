@@ -7,11 +7,6 @@ import (
     "strconv"
 )
 
-
-func fuel(mass int) int{
-	return (mass/3)-2
-}
-
 func readInput(fname string) *[]int{
     text, _ := ioutil.ReadFile(fname)
     lines := strings.Split(string(text), "\n")
@@ -26,20 +21,51 @@ func readInput(fname string) *[]int{
 }
 
 
+func fuelBasic(mass int) int{
+	return (mass/3)-2
+}
+
+func fuelDelux(mass int) int{
+    fuel := fuelBasic(mass)
+    mass = fuel
+    total_fuel := 0
+    for  ; fuel > 0 ; {
+        total_fuel += fuel
+        mass = fuel
+        fuel = fuelBasic(mass)
+    }
+
+    return total_fuel
+}
+
 
 func main(){
 
-    fmt.Println(fuel(12))
-    fmt.Println(fuel(14))
-    fmt.Println(fuel(1969))
-    fmt.Println(fuel(100756))
+    //part 1
+    fmt.Println(fuelBasic(12))
+    fmt.Println(fuelBasic(14))
+    fmt.Println(fuelBasic(1969))
+    fmt.Println(fuelBasic(100756))
 
     fname := "/home/drew/aedvent-code-2019/day 01/andreas - go/input.txt"
     masses := *readInput(fname)
 
-    total_fuel := 0
+    basic_fuel := 0
     for _, mass := range masses {
-        total_fuel += fuel(mass)
+        basic_fuel += fuelBasic(mass)
     }
-    fmt.Println("part 1: ", total_fuel)
+    fmt.Println("part 1: ", basic_fuel)
+
+    //part 2
+    fmt.Println(fuelDelux(12))
+    fmt.Println(fuelDelux(14))
+    fmt.Println(fuelDelux(1969))
+    fmt.Println(fuelDelux(100756))
+
+    delux_fuel := 0
+    for _, mass := range masses {
+        delux_fuel += fuelDelux(mass)
+    }
+    fmt.Println("part 2: ", delux_fuel)
+
 }
