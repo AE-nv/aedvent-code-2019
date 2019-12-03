@@ -78,6 +78,7 @@ func (b Board) print(){
 }
 func (b *Board) addWire(wire []Instruction) {
     y, x := 0, 0
+    distance := 0
     for _, instr := range wire{
         dy, dx := 0, 0
         if instr.direction == 'U'{
@@ -91,6 +92,7 @@ func (b *Board) addWire(wire []Instruction) {
         }
 
         for i := 0; i < instr.steps; i++ {
+            distance++
             y += dy
             x += dx
 
@@ -99,12 +101,14 @@ func (b *Board) addWire(wire []Instruction) {
             }
             if _, ok := b.data[y][x]; !ok {
                 b.data[y][x] = make(map[int]int)
-                b.data[y][x][b.wire_count] = 0
+                //ensures we don't trigger the intersection below
+                b.data[y][x][b.wire_count] = distance
             }
 
             if _, ok := b.data[y][x][b.wire_count]; !ok {
-                fmt.Println("crossing at", y,"-", x)
+                b.data[y][x][b.wire_count] = distance
                 b.crossings = append(b.crossings, [2]int{y,x})
+                //fmt.Println("crossing", y,x, b.data[y][x])
             }
         }
     }
@@ -128,7 +132,7 @@ func getDistancePart1(input string) int{
     min_distance := abs(board.crossings[0][0]) + abs(board.crossings[0][1])
     for _, crossing := range board.crossings[1:] {
         distance := abs(crossing[0]) + abs(crossing[1])
-        fmt.Println(crossing, "=>", distance)
+        //fmt.Println(crossing, "=>", distance)
         if distance < min_distance{
             min_distance = distance
         }
@@ -136,6 +140,37 @@ func getDistancePart1(input string) int{
 
     return min_distance
 }
+
+func getDistancePart2(input string) int{
+    board := Board{
+        data: make(map[int]map[int]map[int]int),
+        crossings: [][2]int{},
+        wire_count: 0,
+    }
+
+    wires := parseInput(input)
+    for _, wire := range wires {
+        board.addWire(wire)
+    }
+    //board.print()
+
+    min_distance := -1
+    for _, crossing := range board.crossings {
+
+        curr_distance := 0
+        for _, distance := range board.data[crossing[0]][crossing[1]] {
+            curr_distance += distance
+        }
+
+        if min_distance < 0 || curr_distance < min_distance {
+            min_distance = curr_distance
+        }
+    }
+
+    return min_distance
+}
+
+
 
 func readInput(fname string) string{
     text, _ := ioutil.ReadFile(fname)
@@ -146,17 +181,20 @@ func readInput(fname string) string{
 func main(){
     input := `R8,U5,L5,D3
 U7,R6,D4,L4`
-    distance := getDistancePart1(input)
-    fmt.Println("=>",distance)
+    fmt.Println("part 1:", getDistancePart1(input))
+    fmt.Println("part 2:", getDistancePart2(input))
 
     input = `R75,D30,R83,U83,L12,D49,R71,U7,L72
 U62,R66,U55,R34,D71,R55,D58,R83`
-    fmt.Println(getDistancePart1(input))
+    fmt.Println("part 1:", getDistancePart1(input))
+    fmt.Println("part 2:", getDistancePart2(input))
 
     input = `R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51
 U98,R91,D20,R16,D67,R40,U7,R15,U6,R7`
-    fmt.Println(getDistancePart1(input))
+    fmt.Println("part 1:", getDistancePart1(input))
+    fmt.Println("part 2:", getDistancePart2(input))
 
     input = readInput("input.txt")
-    fmt.Println(getDistancePart1(input))
+    fmt.Println("part 1:", getDistancePart1(input))
+    fmt.Println("part 2:", getDistancePart2(input))
 }
