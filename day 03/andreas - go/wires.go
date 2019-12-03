@@ -39,7 +39,7 @@ func parseInput(input string) [][]Instruction{
 }
 
 type Board struct{
-    data map[int]map[int]map[int]bool
+    data map[int]map[int]map[int]int
     crossings [][2]int
     wire_count int
 }
@@ -95,11 +95,11 @@ func (b *Board) addWire(wire []Instruction) {
             x += dx
 
             if _, ok := b.data[y]; !ok {
-                b.data[y] = make(map[int]map[int]bool)
+                b.data[y] = make(map[int]map[int]int)
             }
             if _, ok := b.data[y][x]; !ok {
-                b.data[y][x] = make(map[int]bool)
-                b.data[y][x][b.wire_count] = true
+                b.data[y][x] = make(map[int]int)
+                b.data[y][x][b.wire_count] = 0
             }
 
             if _, ok := b.data[y][x][b.wire_count]; !ok {
@@ -112,9 +112,9 @@ func (b *Board) addWire(wire []Instruction) {
     b.wire_count++
 }
 
-func getDistance(input string) int{
+func getDistancePart1(input string) int{
     board := Board{
-        data: make(map[int]map[int]map[int]bool),
+        data: make(map[int]map[int]map[int]int),
         crossings: [][2]int{},
         wire_count: 0,
     }
@@ -146,17 +146,17 @@ func readInput(fname string) string{
 func main(){
     input := `R8,U5,L5,D3
 U7,R6,D4,L4`
-    distance := getDistance(input)
+    distance := getDistancePart1(input)
     fmt.Println("=>",distance)
 
     input = `R75,D30,R83,U83,L12,D49,R71,U7,L72
 U62,R66,U55,R34,D71,R55,D58,R83`
-    fmt.Println(getDistance(input))
+    fmt.Println(getDistancePart1(input))
 
     input = `R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51
 U98,R91,D20,R16,D67,R40,U7,R15,U6,R7`
-    fmt.Println(getDistance(input))
+    fmt.Println(getDistancePart1(input))
 
     input = readInput("input.txt")
-    fmt.Println(getDistance(input))
+    fmt.Println(getDistancePart1(input))
 }
