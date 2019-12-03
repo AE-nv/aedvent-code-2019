@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace AdventOfCode
 {
@@ -7,20 +8,18 @@ namespace AdventOfCode
         public static int Part1(string[] input) => input.Select(int.Parse).Select(CalculateFuel1).Sum();
 
         public static int Part2(string[] input) => input.Select(int.Parse).Select(CalculateFuel2).Sum();
-        public static int CalculateFuel1(int input) => input / 3 - 2;
-        public static int CalculateFuel2(int input) 
+        public static int CalculateFuel1(int mass) => mass / 3 - 2;
+        public static int CalculateFuel2(int mass) => Fuel(mass).Sum();
+
+        static IEnumerable<int> Fuel(int mass)
         {
-            int sum = 0;
-
-            var fuel = CalculateFuel1(input);
-
-            while (fuel > 0)
+            var fuel = mass;
+            while (true)
             {
-                sum += fuel;
                 fuel = CalculateFuel1(fuel);
+                if (fuel < 0) break;
+                yield return fuel;
             }
-
-            return sum;
         }
 
     }
