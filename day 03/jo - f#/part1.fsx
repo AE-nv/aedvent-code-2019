@@ -29,17 +29,19 @@ let step (x,y) direction =
     | L -> (x - 1, y)
     | R -> (x + 1, y)
 
-let rec move location section =
-    if section.steps = 0 then ([], location)
-    else 
-        let s = step location section.direction
-        let (rest, ending) = move s { section with steps = section.steps - 1 }
-        ( s :: rest, ending)
+let rec unfoldSection location section =
+    List.unfold 
+        (fun (steps, loc) -> 
+            if steps = 0 then None
+            else 
+                let next = step loc section.direction
+                Some (next, (steps - 1, next))) 
+        (section.steps, location)
 
 type State = { location : Location; path : Path }
 let path state section = 
-    let (p, endLocation) = move state.location section
-    { state with location = endLocation; path = (state.path |> List.append p) }
+    let p = unfoldSection state.location section
+    { state with location = p |> List.last; path = (state.path |> List.append p) }
 
 let pathFor sections =
     sections
