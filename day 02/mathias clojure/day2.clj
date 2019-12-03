@@ -27,7 +27,7 @@
          (execute (+ index 4) (assoc code output-position result)))))))
 
 (defn part-1 []
-  (execute 0 fixed-code))
+  (first (execute fixed-code)))
 
 (defn part-2 []
   "todo")
