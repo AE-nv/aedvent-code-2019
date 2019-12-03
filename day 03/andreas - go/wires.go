@@ -101,11 +101,14 @@ func (b *Board) addWire(wire []Instruction) {
             }
             if _, ok := b.data[y][x]; !ok {
                 b.data[y][x] = make(map[int]int)
+                //ensures we don't trigger the intersection below
                 b.data[y][x][b.wire_count] = distance
             }
 
             if _, ok := b.data[y][x][b.wire_count]; !ok {
+                b.data[y][x][b.wire_count] = distance
                 b.crossings = append(b.crossings, [2]int{y,x})
+                //fmt.Println("crossing", y,x, b.data[y][x])
             }
         }
     }
@@ -149,20 +152,17 @@ func getDistancePart2(input string) int{
     for _, wire := range wires {
         board.addWire(wire)
     }
+    //board.print()
 
-    min_distance := 999999999999
-
+    min_distance := -1
     for _, crossing := range board.crossings {
 
         curr_distance := 0
-
-        x, y := crossing[0], crossing[1]
-        for _, distance := range board.data[y][x] {
+        for _, distance := range board.data[crossing[0]][crossing[1]] {
             curr_distance += distance
         }
 
-        fmt.Println(crossing, "=>", curr_distance)
-        if curr_distance < min_distance {
+        if min_distance < 0 || curr_distance < min_distance {
             min_distance = curr_distance
         }
     }
@@ -181,16 +181,20 @@ func readInput(fname string) string{
 func main(){
     input := `R8,U5,L5,D3
 U7,R6,D4,L4`
-    fmt.Println(getDistancePart1(input))
+    fmt.Println("part 1:", getDistancePart1(input))
+    fmt.Println("part 2:", getDistancePart2(input))
 
     input = `R75,D30,R83,U83,L12,D49,R71,U7,L72
 U62,R66,U55,R34,D71,R55,D58,R83`
-    fmt.Println(getDistancePart1(input))
+    fmt.Println("part 1:", getDistancePart1(input))
+    fmt.Println("part 2:", getDistancePart2(input))
 
     input = `R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51
 U98,R91,D20,R16,D67,R40,U7,R15,U6,R7`
-    fmt.Println(getDistancePart1(input))
+    fmt.Println("part 1:", getDistancePart1(input))
+    fmt.Println("part 2:", getDistancePart2(input))
 
     input = readInput("input.txt")
-    fmt.Println(getDistancePart1(input))
+    fmt.Println("part 1:", getDistancePart1(input))
+    fmt.Println("part 2:", getDistancePart2(input))
 }
