@@ -29,17 +29,22 @@ let step (x,y) direction =
     | L -> (x - 1, y)
     | R -> (x + 1, y)
 
+let unfoldSection pathLength location section =
+    List.unfold 
+        (fun (steps, loc, pathLength) -> 
+            if steps = 0 then None
+            else 
+                let next = step loc section.direction
+                Some ((next, pathLength), (steps - 1, next, pathLength + 1))) 
+        (section.steps, location, pathLength)
+
 type State = { steps : int; location : Location; path : Path }
-let rec path state (section : Section) =
-    if section.steps = 0 then state
-    else 
-        let s = step state.location section.direction
-        let newState = 
-            { state with
-                steps = state.steps + 1
-                location = s
-                path = (s, state.steps) :: state.path }
-        path newState { section with steps = section.steps - 1 }
+let path state (section : Section) =
+    let unfolded = unfoldSection state.steps state.location section
+    { state with
+        steps = state.steps + section.steps
+        location = unfolded |> List.last |> fst
+        path = List.append state.path unfolded }
 
 let pathFor sections =
     sections
@@ -75,7 +80,7 @@ let result (input : string list) =
 printf "Testing..."
 
 test <@ parse "R1005" = { direction = R; steps = 1005 } @>
-test <@ pathFor [ {direction = U; steps = 1} ; {direction=R;steps= 2} ] = [((2, 1), 2); ((1, 1), 1); ((0, 1), 0)] @>
+test <@ pathFor [ {direction = U; steps = 1} ; {direction=R;steps= 2} ] = [((0, 1), 1); ((1, 1), 2); ((2, 1), 3)]  @>
 test <@ intersections [[(1,1); (1,2); (1,3)]; [(0,1);(1,3);(1,2)]] = [(1,2);(1,3)] @>
 
 test <@ result ["R8,U5,L5,D3"; "U7,R6,D4,L4"] = 30 @>
