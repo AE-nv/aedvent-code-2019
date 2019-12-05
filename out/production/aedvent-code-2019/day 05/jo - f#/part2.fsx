@@ -1,6 +1,9 @@
 #r @"..\..\dependencies\jo\paket\packages\Unquote\lib\net45\Unquote.dll"
 open Swensen.Unquote
 
+//Oh boy this was some hackage. Got to green, but one hell of a mess.
+//I decided I'll skip the refactor phase because already spent too much time on this Today :)
+
 type Pointer = int
 type Program = int list
 type ProgramMode = 
@@ -23,68 +26,62 @@ type Instruction =
     | JumpIfTrue of Parameter * Parameter
     | JumpIfFalse of Parameter * Parameter
 
-let zipInfinite otherInfinity one =
-    otherInfinity 
-    |> Seq.take (one |> Seq.length) 
-    |> Seq.toList
-    |> List.zip one 
-    |> List.map (fun (f,s) -> (s,f))
-
 let parseInstructionAt address program =
     let atPointer = program |> List.skip address
-    let reversedInstruction = atPointer |> List.head |> string |> Seq.toList |> List.rev
-    let opcode = reversedInstruction
+    //printfn "program %A pointer %A atPointer %A" program address atPointer
+    let reversed = atPointer |> List.head |> string |> Seq.toList |> List.rev
+    let opcode = reversed
     let modes opLength =
-        let parsedModes = reversedInstruction |> List.skip opLength |> List.map (System.Char.GetNumericValue >> int) 
+        let parsedModes = reversed |> List.skip opLength |> List.map (System.Char.GetNumericValue >> int) 
             
-        List.append parsedModes (List.replicate 3 0)
+        List.append 
+            parsedModes
+            (List.replicate 3 0)
         |> List.map (function | 0 -> Position | 1 -> Immediate)
-
-    let parseArgs opSize nbArgs = atPointer |> List.skip 1 |> List.take nbArgs |> zipInfinite (modes opSize) 
 
     match opcode with
     | '9' :: '9' :: _ -> Halt
     | '8' :: '0' :: _ -> 
-        let [a;b;(_,r)] = parseArgs 2 3
+        let [a;b;(_,r)] = atPointer |> List.skip 1 |> List.take 3 |> List.zip (modes 2 |> List.take 3)
         Equal (a,b,r)
     | '8' :: _ -> 
-        let [a;b;(_,r)] = parseArgs 1 3
+        let [a;b;(_,r)] = atPointer |> List.skip 1 |> List.take 3 |> List.zip (modes 1 |> List.take 3)
         Equal (a,b,r)
     | '7' :: '0' :: _ -> 
-        let [a;b;(_,r)] = parseArgs 2 3
+        let [a;b;(_,r)] = atPointer |> List.skip 1 |> List.take 3 |> List.zip (modes 2 |> List.take 3)
         LessThan (a,b,r)
     | '7' :: _ -> 
-        let [a;b;(_,r)] = parseArgs 1 3
+        let [a;b;(_,r)] = atPointer |> List.skip 1 |> List.take 3 |> List.zip (modes 1 |> List.take 3)
         LessThan (a,b,r)
     | '6' :: '0' :: _ -> 
-        let [a;b] = parseArgs 2 2
+        let [a;b] = atPointer |> List.skip 1 |> List.take 2 |> List.zip (modes 2 |> List.take 2)
         JumpIfFalse (a,b)
     | '6' :: _ -> 
-        let [a;b] = parseArgs 1 2
+        let [a;b] = atPointer |> List.skip 1 |> List.take 2 |> List.zip (modes 1 |> List.take 2)
         JumpIfFalse (a,b)
     | '5' :: '0' :: _ -> 
-        let [a;b] = parseArgs 2 3
+        let [a;b] = atPointer |> List.skip 1 |> List.take 2 |> List.zip (modes 2 |> List.take 2)
         JumpIfTrue (a,b)
     | '5' :: _ -> 
-        let [a;b] = parseArgs 1 2
+        let [a;b] = atPointer |> List.skip 1 |> List.take 2 |> List.zip (modes 1 |> List.take 2)
         JumpIfTrue (a,b)
     | '1' :: '0' :: _ -> 
-        let [a;b;(_, r)] = parseArgs 2 3
+        let [a;b;(_, r)] = atPointer |> List.skip 1 |> List.take 3 |> List.zip (modes 2 |> List.take 3)
         Add (a,b,r)
     | '1' :: _ -> 
-        let [a;b;(_, r)] = parseArgs 1 3
+        let [a;b;(_, r)] = atPointer |> List.skip 1 |> List.take 3 |> List.zip (modes 1 |> List.take 3)
         Add (a,b,r)
     | '2' :: '0' :: _ -> 
-        let [a;b;(_, r)] = parseArgs 2 3
+        let [a;b;(_, r)] = atPointer |> List.skip 1 |> List.take 3 |> List.zip (modes 2 |> List.take 3)
         Multiply (a,b,r)
     | '2' :: _ -> 
-        let [a;b;(_, r)] = parseArgs 1 3
+        let [a;b;(_, r)] = atPointer |> List.skip 1 |> List.take 3 |> List.zip (modes 1 |> List.take 3)
         Multiply (a,b,r)
     | '4' :: '0' :: _ -> 
-        let [r] = atPointer |> List.skip 1 |> List.take 1 |> zipInfinite (modes 2)
+        let [r] = atPointer |> List.skip 1 |> List.take 1 |> List.zip (modes 2 |> List.take 1)
         Output r
     | '4' :: _ -> 
-        let [r] = atPointer |> List.skip 1 |> List.take 1 |> zipInfinite (modes 1)
+        let [r] = atPointer |> List.skip 1 |> List.take 1 |> List.zip (modes 1 |> List.take 1)
         Output r
     | '3' :: _ ->
         Input (atPointer |> List.skip 1 |> List.head)
@@ -186,4 +183,4 @@ printfn "..done!"
 let input = System.IO.File.ReadAllText(__SOURCE_DIRECTORY__ + "\input.txt")
 let p : Program = input.Split([|','|]) |> Seq.map int |> Seq.toList
 
-run ((Running p), 0) //OUTPUT: 7873292
+run ((Running p), 0)

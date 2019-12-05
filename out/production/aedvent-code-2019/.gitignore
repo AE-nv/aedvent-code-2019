@@ -9,7 +9,6 @@
 *.userosscache
 *.sln.docstates
 *.vcxproj.filters
-*.prettierrc
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -49,7 +48,3 @@ paket-files/
 
 #kotlin
 lib
-=======
-# npm stuff
-node_modules/
-package-lock.json
