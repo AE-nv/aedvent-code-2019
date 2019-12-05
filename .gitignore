@@ -45,3 +45,6 @@ packages/
 #Paket dependency manager
 paket.exe
 paket-files/
+
+#kotlin
+lib
