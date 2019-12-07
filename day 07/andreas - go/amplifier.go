@@ -129,42 +129,82 @@ func run(data []int) ([]int) {
 }
 
 
-func getOutput(program []int, settings [5]int) int{
+func getOutput(program []int, settings []int) int{
     input_values = []int{settings[0], 0}
     run(program)
-    fmt.Println(input_values)
-
     input_values = append([]int{settings[1]}, input_values...)
     run(program)
-    fmt.Println(input_values)
-
     input_values = append([]int{settings[2]}, input_values...)
     run(program)
-    fmt.Println(input_values)
-
     input_values = append([]int{settings[3]}, input_values...)
     run(program)
-    fmt.Println(input_values)
-
     input_values = append([]int{settings[4]}, input_values...)
     run(program)
-    fmt.Println(input_values)
-
     return input_values[0]
 }
 
+
+func possibilities(size int) [][]int{
+    //https://stackoverflow.com/questions/30226438/generate-all-permutations-in-go
+    values := make([]int, size)
+    for i := 0 ; i < size; i++ { values[i] = i }
+
+    var helper func([]int, int)
+    res := [][]int{}
+
+    helper = func(arr []int, n int){
+        if n == 1{
+            tmp := make([]int, len(arr))
+            copy(tmp, arr)
+            res = append(res, tmp)
+        } else {
+            for i := 0; i < n; i++{
+                helper(arr, n - 1)
+                if n % 2 == 1{
+                    tmp := arr[i]
+                    arr[i] = arr[n - 1]
+                    arr[n - 1] = tmp
+                } else {
+                    tmp := arr[0]
+                    arr[0] = arr[n - 1]
+                    arr[n - 1] = tmp
+                }
+            }
+        }
+    }
+    helper(values, len(values))
+    return res
+}
 
 
 var input_values []int
 
 func main(){
-    //part1
+    /*
     program := parseInput("3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0")
-    fmt.Println( getOutput(program, [5]int{4,3,2,1,0}) )
+    fmt.Println( getOutput(program, []int{4,3,2,1,0}) )
 
     program = parseInput("3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0")
-    fmt.Println( getOutput(program, [5]int{0,1,2,3,4}) )
+    fmt.Println( getOutput(program, []int{0,1,2,3,4}) )
 
     program = parseInput("3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0")
-    fmt.Println( getOutput(program, [5]int{1,0,4,3,2}) )
+    fmt.Println( getOutput(program, []int{1,0,4,3,2}) )
+    */
+
+    max_perm, max_val := []int{}, -1
+    input := "3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0"
+    input  = "3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0"
+    input  = "3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0"
+    permutations := possibilities(5)
+    for i, permutation := range permutations {
+        value := getOutput(parseInput(input), permutation)
+        fmt.Println( i, "/", len(permutations), permutation, value )
+
+        if max_val < 0 || value > max_val {
+            max_perm = permutation
+            max_val = value
+        }
+
+    }
+    fmt.Println(max_val, max_perm)
 }
