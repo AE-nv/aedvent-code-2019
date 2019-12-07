@@ -112,7 +112,7 @@ func run(data []int) ([]int, bool) {
 }
 
 
-func part1(){
+func tests(){
     result, ok := run(parseInput("1,9,10,3,2,3,11,0,99,30,40,50"))
     fmt.Println(result, ok)
     result, ok = run(parseInput("1,0,0,0,99"))
@@ -124,6 +124,10 @@ func part1(){
     result, ok = run(parseInput("1,1,1,4,99,5,6,0,99"))
     fmt.Println(result, ok)
 
+    result, ok = run(parseInput("1002,4,3,4,33"))
+    fmt.Println(result, ok)
+    result, ok = run(parseInput("1101,100,-1,4,0"))
+    fmt.Println(result, ok)
 }
 
 
@@ -131,6 +135,9 @@ func part1(){
 var input_value int
 
 func main(){
+    tests()
     input_value = 1
-    part1()
+    program := parseInput(readInput("input.txt"))
+    result, ok := run(program)
+    fmt.Println(result, ok)
 }
