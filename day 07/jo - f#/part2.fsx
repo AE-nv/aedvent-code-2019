@@ -1,6 +1,7 @@
 //7.2: using F# actors (MailBoxProcessors) to represent the different amplifiers.
 // We run all 120 trials in parallel, where each trial models 5 amplifiers in series + feedback loop e->a.
-//The E amp prints out its output to stdout, so some manual maxing of the printed results happens at the end
+//Mostly completely functional/immutable, but took a shortcut at the end because #timeisprecious:
+//  The E amp prints out its output to the evil stdout, so some manual maxing of the printed results required at the end
 //#YOLO
 
 type Pointer = int
