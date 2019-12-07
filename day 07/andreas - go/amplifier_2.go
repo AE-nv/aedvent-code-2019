@@ -79,8 +79,8 @@ func (p *Program) store(param, value int) {
     p.data[param] = value
 }
 func (p *Program) inputStream() int{
-    value := p.input_values[0]
-    p.input_values = p.input_values[1:]
+    value := p.input_values[len(p.input_values)-1]
+    p.input_values = p.input_values[:len(p.input_values)-1]
     return value
 }
 func (p *Program) outputStream(val int) {
@@ -172,15 +172,15 @@ func (p *Program) run() {
 
 
 func (p *Program) getOutput(settings []int) int{
-    p.input_values = []int{settings[0], 0}
+    p.input_values = []int{0, settings[0]}
     p.run()
-    p.input_values = append([]int{settings[1]}, p.input_values...)
+    p.input_values = append(p.input_values, settings[1])
     p.run()
-    p.input_values = append([]int{settings[2]}, p.input_values...)
+    p.input_values = append(p.input_values, settings[2])
     p.run()
-    p.input_values = append([]int{settings[3]}, p.input_values...)
+    p.input_values = append(p.input_values, settings[3])
     p.run()
-    p.input_values = append([]int{settings[4]}, p.input_values...)
+    p.input_values = append(p.input_values, settings[4])
     p.run()
     return p.input_values[0]
 }
