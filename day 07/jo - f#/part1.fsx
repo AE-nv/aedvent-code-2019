@@ -62,7 +62,7 @@ let parseInstructionAt address program =
         let [a;b] = parseArgs 1 2
         JumpIfFalse (a,b)
     | '5' :: '0' :: _ -> 
-        let [a;b] = parseArgs 2 3
+        let [a;b] = parseArgs 2 2
         JumpIfTrue (a,b)
     | '5' :: _ -> 
         let [a;b] = parseArgs 1 2
@@ -170,6 +170,28 @@ let rec run (state : State) : State =
 let initState inputs program =
     { program = program; mode = Running; pointer = 0; input = inputs; output = [] }
 
+let rec permute l = 
+  let rec distribute e = function
+    | [] -> [[e]]
+    | x::xs' as xs -> (e::xs)::[for xs in distribute e xs' -> x::xs]
+
+  match l with
+  | [] -> [[]]
+  | e::xs -> List.collect (distribute e) (permute xs)
+
+let rec trial program (input : int) phases =
+    match phases with
+    | [] -> input
+    | p::ps ->
+        let [output] = initState [p;input] program |> run |> fun s -> s.output
+        trial program output ps
+
+let solve program =
+    let candidates = [0..4] |> permute
+    candidates
+    |> List.map (trial program 0)
+    |> List.max
+
 printf "Testing..."
 
 //Parameter modes
@@ -198,9 +220,15 @@ test <@ pointerIncrement Halt = 1 @>
 //IO
 test <@ initState [1337;666] [3;1;4;1;99] |> run |> (fun s -> s.input, s.output) = ([666], [1337]) @>
 
+test <@ permute [1;2;3] = [[1; 2; 3]; [2; 1; 3]; [2; 3; 1]; [1; 3; 2]; [3; 1; 2]; [3; 2; 1]] @>
+
+test <@ solve [3;15;3;16;1002;16;10;16;1;16;15;15;4;15;99;0;0] = 43210 @>
+test <@ solve [3;23;3;24;1002;24;10;24;1002;23;-1;23;101;5;23;23;1;24;23;23;4;23;99;0;0] = 54321 @>
+test <@ solve [3;31;3;32;1002;32;10;32;1001;31;-2;31;1007;31;0;33;1002;33;7;33;1;33;31;31;1;32;31;31;4;31;99;0;0;0] = 65210 @>
+
 printfn "..done!"
 
 let input = System.IO.File.ReadAllText(__SOURCE_DIRECTORY__ + "\input.txt")
 let p : Program = input.Split([|','|]) |> Seq.map int |> Seq.toList
 
-initState [0] p |> run //OUTPUT: 7873292
+solve p
