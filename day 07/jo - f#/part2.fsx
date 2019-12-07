@@ -1,8 +1,6 @@
-//7.2: using F# actors (MailBoxProcessors) to represent the different amplifiers.
-// We run all 120 trials in parallel, where each trial models 5 amplifiers in series + feedback loop e->a.
-//Mostly completely functional/immutable, but took a shortcut at the end because #timeisprecious:
-//  The E amp prints out its output to the evil stdout, so some manual maxing of the printed results required at the end
-//#YOLO
+//7.2: completely immutable/functional using F# actors (MailBoxProcessors) to represent the different amplifiers.
+// We run all 120 trials in parallel, where each trial models 5 "amplifier" actors in series
+// and an "aggregator" actor that keep track of the running maxima.
 
 type Pointer = int
 type Program = int list
@@ -29,7 +27,7 @@ type Message =
     | SetNextAmp of Amplifier
 and Amplifier = MailboxProcessor<Message>
 and AmpState = { programState : State; next : Amplifier option }
-and IO = { input : MailboxProcessor<Message>; output : int -> unit }
+and IO = { input : unit -> Async<int>; output : int -> unit }
 
 let initState program = { program = program; mode = Running; pointer = 0; lastOutput = None }
 
@@ -145,7 +143,7 @@ let runSingleInstruction state instruction (io :IO) =
                     program = store product r state.program
                     pointer = state.pointer + pointerIncrement instruction }
         | Input r ->
-            let! (ProcessInput i) = io.input.Receive()
+            let! i = io.input ()
             return
                 { state with 
                     program = store i r state.program
@@ -201,17 +199,35 @@ let rec permute l =
   | [] -> [[]]
   | e::xs -> List.collect (distribute e) (permute xs)
 
-let amplifier program id trial = MailboxProcessor.Start(fun inbox -> 
+type AggregatorMessage = | AResult of int | GetMax of AsyncReplyChannel<int>
+type Aggregator = MailboxProcessor<AggregatorMessage>
+let aggregator () = MailboxProcessor.Start(fun inbox-> 
+    let rec messageLoop max = async{
+        let! msg = inbox.Receive()
+        match msg with
+        | AResult r ->
+            let next = if r > max then r else max
+            return! messageLoop next
+        | GetMax reply -> 
+            reply.Reply max
+            return! messageLoop max
+    }
+
+    messageLoop -1)
+
+let amplifier program id (aggregator : Aggregator) = MailboxProcessor.Start(fun inbox -> 
     let rec init = async {
         let! nextAmp = inbox.Scan(function | SetNextAmp n -> Some (async.Return n) | _ -> None)
 
         let rec run state = async {
+            let input () =
+                inbox.Scan (function | ProcessInput i -> Some (async.Return i) | _ -> None)
             let output o = 
                 state.next |> Option.iter (fun a -> a.Post (ProcessInput o))
-            let! next = runProgram ({ input = inbox; output = output }) (async.Return state.programState)
+            let! next = runProgram ({ input = input; output = output }) (async.Return state.programState)
             if id = 'E' && next.mode = Finished 
             then 
-                next.lastOutput |> Option.iter (printfn "%d;" )
+                next.lastOutput |> Option.iter (AggregatorMessage.AResult >> aggregator.Post)
                 return () 
             elif next.mode = Finished then
                 return ()
@@ -224,11 +240,12 @@ let amplifier program id trial = MailboxProcessor.Start(fun inbox ->
     init)
 
 let trial program (phases : int list) =
-    let a = amplifier program 'A' phases
-    let b = amplifier program 'B' phases
-    let c = amplifier program 'C' phases
-    let d = amplifier program 'D' phases
-    let e = amplifier program 'E' phases
+    let aggregator = aggregator ()
+    let a = amplifier program 'A' aggregator
+    let b = amplifier program 'B' aggregator
+    let c = amplifier program 'C' aggregator
+    let d = amplifier program 'D' aggregator
+    let e = amplifier program 'E' aggregator
     a.Post (Message.SetNextAmp b)
     b.Post (Message.SetNextAmp c)
     c.Post (Message.SetNextAmp d)
@@ -243,20 +260,16 @@ let trial program (phases : int list) =
 
     a.Post (Message.ProcessInput 0)
 
+    aggregator
+
 let input = System.IO.File.ReadAllText(__SOURCE_DIRECTORY__ + "\input.txt")
 let program : Program = input.Split([|','|]) |> Seq.map int |> Seq.toList
-//let program =[3;26;1001;26;-4;26;3;27;1002;27;2;27;1;27;26;27;4;27;1001;28;-1;28;1005;28;6;99;0;0;5]
-//let program =[3;52;1001;52;-5;52;3;53;1;52;56;54;1007;54;5;55;1005;55;26;1001;54;-5;54;1105;1;12;1;53;54;53;1008;54;0;55;1001;55;1;55;2;53;55;53;4;53;1001;56;-1;56;1005;56;6;99;0;0;0;0;10]
-//trial program [9;8;7;6;5]
 
 let candidates = ([5..9] |> permute)
-candidates
-|> List.map (fun candidate -> async { return trial program candidate })
-|> Async.Parallel
-|> Async.RunSynchronously
-
-let results = 
-    [
-        -1
-        //copy/paste the 120 printed results in here
-    ] |> List.max
+let result = 
+    candidates
+    |> List.map (fun candidate -> async { return trial program candidate })
+    |> Async.Parallel
+    |> Async.RunSynchronously 
+    |> Seq.map (fun a -> a.PostAndReply AggregatorMessage.GetMax)
+    |> Seq.max
