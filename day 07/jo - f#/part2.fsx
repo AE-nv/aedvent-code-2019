@@ -1,3 +1,7 @@
+//7.2: using F# actors (MailBoxProcessors) to represent the different amplifiers.
+//The amps print their output to stdout, so some manual maxing of the printed results happens at the end
+//#YOLO
+
 type Pointer = int
 type Program = int list
 type ProgramMode = 
