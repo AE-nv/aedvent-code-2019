@@ -50,7 +50,6 @@ func input(data []int, pos int, param_modi []int) ([]int,int) {
 func output(data []int, pos int, param_modi []int) ([]int,int) {
     val_a := retrieve(data, data[pos+1], param_modi[0])
     input_values = append(input_values, val_a)
-    fmt.Println("==>>", val_a)
     return data, pos+2
 }
 func jit(data []int, pos int, param_modi []int) ([]int,int) {
@@ -92,8 +91,6 @@ func parseInstruction(code int) (int, []int){
     return opcode, parameter_modi
 }
 func run(data []int) ([]int) {
-    fmt.Println()
-    fmt.Println(data)
     pos := 0
     var opcode int
     var param_modi []int
@@ -101,7 +98,7 @@ func run(data []int) ([]int) {
     for opcode != 99 {
         opcode, param_modi = parseInstruction(data[pos])
 
-        fmt.Println("\t", pos, opcode, param_modi)
+        //fmt.Println("\t", pos, opcode, param_modi)
         if opcode == 1 {
             data, pos = add(data, pos, param_modi)
         } else if opcode == 2 {
@@ -176,6 +173,22 @@ func possibilities(size int) [][]int{
     return res
 }
 
+func search(input string) (int, []int) {
+    permutations := possibilities(5)
+    max_perm, max_val := []int{}, -1
+    for _, permutation := range permutations {
+        value := getOutput(parseInput(input), permutation)
+        //fmt.Println( i, "/", len(permutations))
+
+        if max_val < 0 || value > max_val {
+            max_perm = permutation
+            max_val = value
+        }
+
+    }
+    return max_val, max_perm
+}
+
 
 var input_values []int
 
@@ -191,20 +204,9 @@ func main(){
     fmt.Println( getOutput(program, []int{1,0,4,3,2}) )
     */
 
-    max_perm, max_val := []int{}, -1
     input := "3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0"
     input  = "3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0"
     input  = "3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0"
-    permutations := possibilities(5)
-    for i, permutation := range permutations {
-        value := getOutput(parseInput(input), permutation)
-        fmt.Println( i, "/", len(permutations), permutation, value )
-
-        if max_val < 0 || value > max_val {
-            max_perm = permutation
-            max_val = value
-        }
-
-    }
+    max_val, max_perm := search(input)
     fmt.Println(max_val, max_perm)
 }
