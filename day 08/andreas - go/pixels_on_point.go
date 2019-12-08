@@ -58,8 +58,7 @@ func findLayer(layers [][][]int) int{
 }
 
 func checksum(layer [][]int) int{
-    ones := 0
-    twos := 0
+    ones, twos := 0, 0
     for _, row := range layer {
         for _, digit := range row {
             if digit == 1 {
@@ -69,18 +68,59 @@ func checksum(layer [][]int) int{
             }
         }
     }
-
     return ones * twos
+}
+
+func render(layers [][][]int) [][]int{
+    if len(layers) <= 1 { return layers[0] }
+
+    tall := len(layers[0])
+    wide := len(layers[0][0])
+
+    image := make([][]int, tall)
+    for y := 0; y < tall ; y++ {
+        row := make([]int, wide)
+        for x := 0; x < wide; x++ {
+            row[x] = getValue(layers, y,x)
+        }
+        image[y] = row
+    }
+
+    return image
+}
+
+func getValue(layers [][][]int, y, x int) int{
+
+    values := make([]int, len(layers))
+    for i, layer := range layers {
+        values[i] = layer[y][x]
+    }
+
+    for _, value := range values {
+        if value == 0 {
+            return 0
+        } else if value == 1 {
+            return 1
+        }
+    }
+
+    return -1
 }
 
 
 func main(){
     fmt.Println(getLayers("123456789012", 3, 2))
+    fmt.Println(render(getLayers("0222112222120000", 2,2)))
 
     input := readInput("input.txt")
     layers := getLayers(input, 25,6)
     min_layer := findLayer(layers)
     checksum := checksum(layers[min_layer])
     fmt.Println(checksum)
+    image := render(layers)
+    fmt.Println()
+    for _, row := range image {
+        fmt.Println(row)
+    }
 
 }
