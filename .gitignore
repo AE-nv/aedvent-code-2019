@@ -53,3 +53,4 @@ lib
 # npm stuff
 node_modules/
 package-lock.json
+out
