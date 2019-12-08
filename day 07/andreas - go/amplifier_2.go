@@ -79,13 +79,9 @@ func (p *Amp) store(param, value int) {
 }
 func (p *Amp) inputStream() int{
     value := p.input_values[0]
-    fmt.Println("reading", value)
+    //fmt.Println("reading", value)
     p.input_values = p.input_values[1:]
     return value
-}
-func (p *Amp) outputStream(value int) {
-    fmt.Println("storing", value)
-    p.input_values = append(p.input_values, value)
 }
 
 func (p *Amp) add(param_modi []int) {
@@ -109,7 +105,6 @@ func (p *Amp) input(param_modi []int) {
 }
 func (p *Amp) output(param_modi []int) int {
     val_a := p.retrieve(p.data[p.pos+1], param_modi[0])
-    p.outputStream(val_a)
     p.pos+=2
     return val_a
 }
@@ -187,21 +182,21 @@ func getOutput(input string, permutation []int) int {
         parseInput(input),
     }
     for i, setting := range permutation {
-        amps[i].outputStream(setting)
+        amps[i].input_values = append(amps[i].input_values, setting)
     }
-    amps[0].outputStream(0)
+    amps[0].input_values = append(amps[0].input_values, 0)
 
-    var output int
-    var done bool
-    for i := 0; i < 5 ; i++ {
-        output, done = amps[i].run()
-        fmt.Println(output, done)
+    var last_output int
+    for i := 0; true ; i++ {
 
-        if i == 5 && done { break }
-        amps[(i+1) % 5].outputStream(output)
+        output, done := amps[i%5].run()
+        amps[(i+1) % 5].input_values = append(amps[(i+1)%5].input_values, output)
+
+        if i%5 == 0 && done { break }
+        last_output = output
     }
 
-    return output
+    return last_output
 }
 
 
@@ -224,6 +219,7 @@ func search(input string, permutations [][]int) (int, []int) {
 
 func main(){
 
+    /*
     input := "3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0"
     fmt.Println(getOutput(input, []int{4,3,2,1,0}))
 
@@ -232,8 +228,12 @@ func main(){
 
     input = "3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0"
     fmt.Println(getOutput(input, []int{1,0,4,3,2}))
-    panic("")
+    */
 
+    input := "3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5"
+    fmt.Println(getOutput(input, []int{ 9,8,7,6,5 }))
+
+    panic("")
     permutations := possibilities([]int{ 5,6,7,8,9 })
     max_val, max_perm := search(input, permutations)
     fmt.Println(max_val, max_perm)
