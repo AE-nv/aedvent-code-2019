@@ -239,8 +239,7 @@ let amplifier program id (aggregator : Aggregator) = MailboxProcessor.Start(fun 
     }
     init)
 
-let trial program (phases : int list) =
-    let aggregator = aggregator ()
+let trial program (phases : int list) aggregator =
     let a = amplifier program 'A' aggregator
     let b = amplifier program 'B' aggregator
     let c = amplifier program 'C' aggregator
@@ -260,16 +259,13 @@ let trial program (phases : int list) =
 
     a.Post (Message.ProcessInput 0)
 
-    aggregator
-
 let input = System.IO.File.ReadAllText(__SOURCE_DIRECTORY__ + "\input.txt")
 let program : Program = input.Split([|','|]) |> Seq.map int |> Seq.toList
 
 let candidates = ([5..9] |> permute)
-let result = 
-    candidates
-    |> List.map (fun candidate -> async { return trial program candidate })
-    |> Async.Parallel
-    |> Async.RunSynchronously 
-    |> Seq.map (fun a -> a.PostAndReply AggregatorMessage.GetMax)
-    |> Seq.max
+let agg = aggregator ()
+candidates
+|> List.map (fun candidate -> async { return trial program candidate agg})
+|> Async.Parallel
+|> Async.RunSynchronously 
+agg.PostAndReply AggregatorMessage.GetMax //30872528
