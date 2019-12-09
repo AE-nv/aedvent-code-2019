@@ -83,7 +83,7 @@ func (p *Amp) multiply(param_modi []int) {
 }
 func (p *Amp) input(param_modi []int) {
     value := p.inputStream()
-    p.store(p.data[p.pos+1], value, param_modi[2])
+    p.store(p.data[p.pos+1], value, param_modi[0])
     p.pos+=2
 }
 func (p *Amp) output(param_modi []int) int {
@@ -136,6 +136,8 @@ func (p *Amp) run() (int, bool) {
     for opcode != 99 {
         opcode, param_modi = parseInstruction(p.data[p.pos])
 
+        fmt.Println(p.data[p.pos], "=>", p.pos, opcode, param_modi, p.input_values)
+
         if opcode == 1 {
             p.add(param_modi)
         } else if opcode == 2 {
@@ -144,6 +146,7 @@ func (p *Amp) run() (int, bool) {
             p.input(param_modi)
         } else if opcode == 4 {
             value := p.output(param_modi)
+            p.input_values = append(p.input_values, value)
             fmt.Println(value)
         } else if opcode == 5 {
             p.jit(param_modi)
@@ -170,6 +173,7 @@ func (p *Amp) run() (int, bool) {
 
 
 func main(){
+    /*
     program := parseInput("109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99")
     fmt.Println(program.run())
 
@@ -178,6 +182,11 @@ func main(){
 
     program = parseInput("104,1125899906842624,99")
     fmt.Println(program.run())
+    */
 
+    input := readInput("input.txt")
+    program := parseInput(input)
+    program.input_values = append(program.input_values, 1)
+    fmt.Println(program.run())
 
 }
