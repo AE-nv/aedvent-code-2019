@@ -182,11 +182,16 @@ func main(){
 
     program = parseInput("104,1125899906842624,99")
     fmt.Println(program.run())
-    */
 
     input := readInput("input.txt")
     program := parseInput(input)
     program.input_values = append(program.input_values, 1)
+    fmt.Println(program.run())
+    */
+
+    input := readInput("input.txt")
+    program := parseInput(input)
+    program.input_values = append(program.input_values, 2)
     fmt.Println(program.run())
 
 }
