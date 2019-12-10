@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "math"
+    "sort"
     "strings"
     "io/ioutil"
 )
@@ -18,8 +19,20 @@ func angleBetween(x,y int, ax,ay int) float64 {
     monitor_x := float64(x)
     monitor_y := float64(y)
     angle := math.Atan2( (astroid_y-monitor_y), (astroid_x-monitor_x) )
+    angle += math.Pi/2 //start pointing to top
+    if angle < 0 { angle += 2*math.Pi } //no negativity
     //fmt.Println(monitor_x, monitor_y, "astroid:", astroid_x, astroid_y, "=>", angle)
     return angle
+}
+func distanceBetween(x,y int, ax,ay int) float64{
+    astroid_x := float64(ax)
+    astroid_y := float64(ay)
+    monitor_x := float64(x)
+    monitor_y := float64(y)
+
+    dy := monitor_y-astroid_y
+    dx := monitor_x-astroid_x
+    return math.Sqrt(dy*dy + dx*dx)
 }
 
 type Galaxy struct {
@@ -75,9 +88,62 @@ func (g Galaxy) search() (int, int, int){
     return best_x, best_y, best_count
 }
 
+func (g Galaxy) destroy() ([][2]int) {
+    mx, my, _ := g.search()
+    orderings := map[float64][][2]int{}
 
-func main(){
+    //group by angle
+    for _, astroid := range g.astroids{
+        ax, ay := astroid[0], astroid[1]
+        if ax == mx && ay == my { continue }
+        angle := angleBetween(mx,my, ax,ay)
 
+        if _, ex := orderings[angle]; !ex {
+            orderings[angle] = [][2]int{}
+        }
+
+        orderings[angle] = append(orderings[angle], [2]int{ax,ay})
+    }
+
+    //sort each group by distance
+    for _, astroids := range orderings {
+        sort.Slice(astroids,
+            func(i, j int) bool {
+                dist_i := distanceBetween(mx, my, astroids[i][0], astroids[i][1])
+                dist_j := distanceBetween(mx, my, astroids[j][0], astroids[j][1])
+                return dist_i < dist_j
+            },
+        )
+    }
+
+    //get order
+    count := 0
+    order := make([][2]int, len(g.astroids)-1)
+    for count < len(g.astroids)-1 {
+
+        angles := make([]float64, len(orderings))
+        i := 0; for key, _ := range orderings { angles[i] = key; i++ }
+        sort.Float64s(angles)
+
+        for _, angle := range angles {
+            if len(orderings[angle]) == 0 {
+                delete(orderings, angle)
+            } else {
+                destroyed := orderings[angle][0]
+                fmt.Println("destroyed", destroyed, "=>", count, len(order))
+                order[count] = destroyed
+                count++
+                orderings[angle] = orderings[angle][1:]
+            }
+        }
+
+    }
+
+    return order
+
+}
+
+func testPart1(){
     input := `.#..#
 .....
 #####
@@ -149,8 +215,61 @@ func main(){
 ###.##.####.##.#..##`
     x,y,cnt = parseInput(input).search()
     fmt.Println(x,y,cnt)
+}
 
-    input = readInput("input.txt")
-    x,y,cnt = parseInput(input).search()
+func testPart2(){
+    input := `.#....#####...#..
+##...##.#####..##
+##...#...#.#####.
+..#.....#...###..
+..#.#.....#....##`
+    galaxy := parseInput(input)
+    x,y,cnt := galaxy.search()
     fmt.Println(x,y,cnt)
+    order := galaxy.destroy()
+    fmt.Println(order)
+
+    input = `.#..##.###...#######
+##.############..##.
+.#.######.########.#
+.###.#######.####.#.
+#####.##.#.##.###.##
+..#####..#.#########
+####################
+#.####....###.#.#.##
+##.#################
+#####.##.###..####..
+..######..##.#######
+####.##.####...##..#
+.#####..#.######.###
+##...#.##########...
+#.##########.#######
+.####.#.###.###.#.##
+....##.##.###..#####
+.#.#.###########.###
+#.#.#.#####.####.###
+###.##.####.##.#..##`
+    galaxy = parseInput(input)
+    x,y,cnt = galaxy.search()
+    fmt.Println(x,y,cnt)
+    order = galaxy.destroy()
+    for i, astroid := range order {
+        fmt.Println(i+1,"=>", astroid)
+    }
+}
+
+
+func main(){
+    //part 1
+    input := readInput("input.txt")
+    galaxy := parseInput(input)
+    x,y,cnt := galaxy.search()
+    fmt.Println(x,y,cnt)
+
+    order := galaxy.destroy()
+    for i, astroid := range order {
+        fmt.Println(i+1,"=>", astroid)
+    }
+
+
 }
