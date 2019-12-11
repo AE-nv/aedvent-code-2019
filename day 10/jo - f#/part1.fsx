@@ -19,8 +19,7 @@ let solve input =
     asteroids
     |> List.map (fun a -> a, asteroids |> List.except [a] |> List.groupBy (angle a))
     |> List.map (fun (a,dirs) -> a,dirs |> Seq.length)
-    |> List.map snd
-    |> List.max
+    |> List.maxBy snd
 
 let t () =
     printf "Testing..."
@@ -32,7 +31,7 @@ let t () =
                 "#####"
                 "....#"
                 "...##"]
-            solve example = 8 @>
+            solve example = ((3,4), 8) @>
 
     test <@
             let example = [
@@ -57,10 +56,10 @@ let t () =
                 "#.#.#.#####.####.###"
                 "###.##.####.##.#..##" ]
 
-            solve example = 210 @>
+            solve example = ((11,13),210) @>
 
     printfn "..done!"
 t ()
 
 let input = System.IO.File.ReadAllLines(__SOURCE_DIRECTORY__ + "\input.txt") |> List.ofSeq
-input |> solve //274
+input |> solve //((19, 14), 274)
