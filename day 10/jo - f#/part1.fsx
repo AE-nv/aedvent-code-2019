@@ -1,53 +1,55 @@
 #r @"..\..\dependencies\jo\paket\packages\Unquote\lib\net45\Unquote.dll"
-open Swensen.Unquote
+#r @"..\..\dependencies\jo\paket\packages\FsAlg\lib\FSAlg.dll"
+open Swensen.Unquote  
+open FsAlg.Generic
 
-type Space = Empty | Asteroid
+let parse lines = 
+    seq {
+        for y,row in (lines |> Seq.indexed) do
+        for x,cell in (row |> Seq.indexed) do
+        if cell = '#' then yield (x,y)
+    }
+    |> List.ofSeq
 
-let parseChar =
-    function
-    | '#' -> Asteroid
-    | '.' -> Empty
+let angle a b = 
+    let (x,y),(xb,yb) = a,b
+    let dx,dy = (x - xb), (y - yb)
+    -1
 
-let parseText lines =
-    lines |> List.map (List.ofSeq >> List.map parseChar)
+let angle (x1,y1) (x2,y2) =
+    let v1 = vector [float x1; float y1]
+    let v2 = vector [float x2; float y2]
+    let dv = v2 - v1
+    let dhorizontal = vector [float System.Int64.MaxValue; float y1]
+    let dot = dhorizontal * dv
+    dot / dhorizontal.
 
-let toMap parsed = 
-    parsed
-    |> List.indexed
-    |> List.collect (fun (ri,row) -> row |> List.indexed |> List.map (fun (ci,s) -> (ci,ri), s))
-
-let example = [ ".#..#"
-                "....."
-                "#####"
-                "....#"
-                "...##"]
-let input = System.IO.File.ReadAllLines(__SOURCE_DIRECTORY__ + "\input.txt") |> List.ofSeq
-
-let asteroids =             
-    example
-    |> parseText
-    |> toMap
-    |> List.filter (function | (_, Asteroid) -> true | _ -> false)
-    |> List.map fst
-
-let vector (x,y) (xo,yo) = xo-x,yo-y
-
-let vectors asts a = 
-    asts |> List.map (vector a)
-
-let onLine (x1,y1) (x2,y2) (x3,y3) = 
-    0 = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)
-
-let rec los loc vecs = 
-    match vecs with
-    | [] -> []
-    | v :: vs -> 
-        let rem = vs |> List.filter (fun x -> onLine x v (0,0) |> not)
-        v :: (los loc rem)
-
-let vecs =
+let solve input =
+    let asteroids = parse input
+    
     asteroids
-    |> List.map (fun a -> a, vectors (asteroids |> List.except [a]) a)
-    |> List.map (fun (a, v) -> (a, los a v |> List.length))
+    |> List.map (fun a -> a, asteroids |> List.except [a] |> List.groupBy (angle a))
+    |> List.map (fun (a,dirs) -> a,dirs |> Seq.length)
     |> List.map snd
     |> List.max
+
+let t () =
+    printf "Testing..."
+    test <@ norm (3,4) = 5.0 @>
+    test <@ normalize (3,4) = (0.6,0.8) @>
+    test <@ dot (1,2) (3,4) = 3 @>
+
+    test <@ 
+            let example = 
+                [ ".#..#"
+                  "....."
+                  "#####"
+                  "....#"
+                  "...##"]
+            solve example = 8 @>
+
+    printfn "..done!"
+t ()
+
+//let input = System.IO.File.ReadAllLines(__SOURCE_DIRECTORY__ + "\input.txt") |> List.ofSeq
+//input |> solve //WRONG: 265
