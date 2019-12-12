@@ -136,8 +136,6 @@ func (p *Amp) run() (int, bool) {
     for opcode != 99 {
         opcode, param_modi = parseInstruction(p.data[p.pos])
 
-        fmt.Println(p.data[p.pos], "=>", p.pos, opcode, param_modi, p.input_values)
-
         if opcode == 1 {
             p.add(param_modi)
         } else if opcode == 2 {
@@ -146,8 +144,7 @@ func (p *Amp) run() (int, bool) {
             p.input(param_modi)
         } else if opcode == 4 {
             value := p.output(param_modi)
-            p.input_values = append(p.input_values, value)
-            fmt.Println(value)
+            return value, false
         } else if opcode == 5 {
             p.jit(param_modi)
         } else if opcode == 6 {
@@ -161,7 +158,6 @@ func (p *Amp) run() (int, bool) {
         } else if opcode == 99 {
             return 0, true
         } else {
-            fmt.Println("invalid opcode")
             opcode = 99
             //panic("what just happend?!")
         }
@@ -169,29 +165,112 @@ func (p *Amp) run() (int, bool) {
     return 0, true
 }
 
+type Robot struct{
+    x, y int
+    direction int
+}
+func createRobot() Robot{ return Robot{0,0, 0} }
+func (r *Robot) move(output int) {
+    if output == 0 {
+        r.direction++
+    } else if output == 1 {
+        r.direction--
+        if r.direction < 0 { r.direction += 4 }
+    }
+    r.direction %= 4
+
+    //up, left, down, right
+    dx := []int{ 0,-1, 0, 1 }
+    dy := []int{-1, 0, 1, 0 }
+
+
+    r.x += dx[r.direction]
+    r.y += dy[r.direction]
+
+}
+
+
+func createBoard() Board{
+    return Board { map[int]map[int]int{} }
+}
+type Board struct {
+    data map[int]map[int]int
+}
+func (b Board) getValue(x,y int) int {
+    if _, ex := b.data[y] ; ! ex { return 1 }
+
+    val, ex := b.data[y][x]
+    if ex { return val }
+    return 1
+}
+func (b *Board) setValue(x,y, val int){
+    if _, ex := b.data[y]; !ex {
+        b.data[y] = map[int]int{}
+    }
+    b.data[y][x] = val
+}
+func (b Board) printBoard(rx,ry int) {
+    miny, maxy := 0, 0
+    minx, maxx := 0, 0
+
+    for y, row := range b.data {
+        if y < miny { miny = y }
+        if y > maxy { maxy = y }
+
+        for x, _ := range row {
+            if x < minx { minx = x }
+            if x > maxx { maxx = x }
+        }
+    }
+
+    for y := miny-1 ; y <= maxy+1 ; y++ {
+        for x := minx-1 ; x <= maxx+1 ; x++ {
+
+            if y == ry && x == rx {
+                fmt.Print("X")
+                continue
+            }
+            value := b.getValue(x,y)
+            if value == 1 {
+                fmt.Print("#")
+            } else {
+                fmt.Print(".")
+            }
+        }
+        fmt.Println()
+    }
+
+}
+func (b Board) count() int {
+    count := 0
+    for y, row := range b.data {
+        for x, _ := range row {
+            if _, ex := b.data[y][x]; ex { count++ }
+        }
+    }
+    return count
+}
 
 
 
 func main(){
-    /*
-    program := parseInput("109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99")
-    fmt.Println(program.run())
-
-    program = parseInput("1102,34915192,34915192,7,4,7,99,0")
-    fmt.Println(program.run())
-
-    program = parseInput("104,1125899906842624,99")
-    fmt.Println(program.run())
 
     input := readInput("input.txt")
     program := parseInput(input)
+    robot := createRobot()
+    board := createBoard()
+
     program.input_values = append(program.input_values, 1)
-    fmt.Println(program.run())
-    */
+    color, done := program.run()
+    output, done :=  program.run()
+    for ! done  {
+        board.setValue(robot.x, robot.y, color)
+        robot.move(output)
+        program.input_values = append(program.input_values, board.getValue(robot.x, robot.y))
 
-    input := readInput("input.txt")
-    program := parseInput(input)
-    program.input_values = append(program.input_values, 2)
-    fmt.Println(program.run())
-
+        color, done = program.run()
+        output, done =  program.run()
+    }
+    fmt.Println(board.count())
+    board.printBoard(robot.x, robot.y)
 }

@@ -237,6 +237,7 @@ func (b Board) printBoard(rx,ry int) {
                 fmt.Print(".")
             }
         }
+        fmt.Println()
     }
 
 }
