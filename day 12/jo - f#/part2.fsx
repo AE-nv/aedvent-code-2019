@@ -52,6 +52,10 @@ let step moons =
 
     updatedGravity |> Map.map (fun _ v -> applyVelocity v)
 
+let rec takeSteps s moons =
+    if s = 0 then moons
+    else takeSteps (s - 1) (step moons)
+
 let periodOf moons =
     let rec run moons todos gen acc =
         if todos |> List.isEmpty then acc
@@ -81,7 +85,11 @@ let big_example =
         init 3 9L -8L -3L ]
 let input = [ init 0 -9L 10L -1L;init 1 -14L -8L 14L;init 2 1L 5L 6L;init 3  -19L 7L 8L ]
 
-example
+//big_example 
+//|> List.map (fun m -> m.id, m) |> Map.ofList 
+//|> takeSteps 100
+
+big_example
 |> List.map (fun m -> m.id, m) |> Map.ofList
 |> periodOf
 |> List.map snd
