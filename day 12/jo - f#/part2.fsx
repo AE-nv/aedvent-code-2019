@@ -34,8 +34,7 @@ let applyGravity (id, v) moons =
 
 let applyVelocity moon = 
     let v = moon.velocity
-    { moon with position = 
-        { 
+    { moon with position = { 
             x = moon.position.x + v.x 
             y = moon.position.y + v.y
             z = moon.position.z + v.z         
@@ -57,13 +56,6 @@ let rec takeSteps s moons =
     if s = 0 then moons
     else takeSteps (s - 1) (step moons)
 
-let energy moon =
-    let pos = moon.position
-    let pot = abs pos.x + abs pos.y + abs pos.z
-    let vel = moon.velocity
-    let kin = abs vel.x + abs vel.y + abs vel.z
-    pot * kin
-
 let example = [
     init 0 -1 0 2
     init 1 2 -10 -7
@@ -72,12 +64,41 @@ let example = [
 
 let input = [ init 0 -9 10 -1;init 1 -14 -8 14;init 2 1 5 6;init 3  -19 7 8 ]
 
-input
-|> List.map (fun m -> m.id, m) |> Map.ofList
-|> takeSteps 1000
-|> Map.map (fun _ m -> energy m)
-|> Map.fold (fun acc _ m -> acc + m) 0
+let periodOf moons =
+    let rec run moons todos gen acc =
+        match todos with
+        | [] -> acc
+        | _ ->
+            if gen % 1_000_000L = 0L then printfn "%A" gen
+            let next = step moons
+            //TODO: redesign so we only simulate once instead of or every period
+            todos |> Map.map
+            let nm = next |> Map.find id
+            if moon = nm then 
+                printfn "FOUND A PERIOD: %d - %A" id gen
+                gen
+            else run next (gen + 1L)
+    run moons 1L
 
+let lcm x y = 
+    let rec gcd x y = if y = 0L then abs x else gcd y (x % y)
+    x * y / (gcd x y)
+
+let big_example = 
+    [
+        init 0 -8 -10 0
+        init 1 5 5 10
+        init 2 2 -7 3
+        init 3 9 -8 -3 ]
+
+let moons = 
+    big_example
+    |> List.map (fun m -> m.id, m) |> Map.ofList
+
+
+[0..3] 
+|> List.map (fun id -> periodOf id moons)
+|> List.fold lcm 1L
 
 (*
 	<x=-9, y=10, z=-1>
