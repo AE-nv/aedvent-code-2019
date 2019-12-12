@@ -1,0 +1,155 @@
+(ns aoc-2019.day7
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
+            [clojure.math.numeric-tower :as math]
+            [clojure.math.combinatorics :as combin]))
+
+(def line (->> "input-7.txt" io/resource io/reader slurp))
+(def code
+  (->>
+    (str/split line #",")
+    (map read-string)
+    (into [])))
+
+(defn read-operation-code [instruction] (mod instruction 100))
+(defn read-param-mode
+  "Extracts the mode of the given parameter (1 based index) by applying a modifier (power of 10) and a mod operation"
+  [instruction param-number]
+  (let [modifier (math/expt 10 (inc param-number))]
+    (case (mod (int (/ instruction modifier)) 10)
+      0 :position
+      1 :immediate)))
+(defn read-instruction [code index]
+  (let [instr-code (code index)]
+    {:op-code (read-operation-code instr-code)
+     :start index
+     :modes (vector
+              (read-param-mode instr-code 1)
+              (read-param-mode instr-code 2)
+              (read-param-mode instr-code 3))}))
+(defn get-arg [code instruction arg-index]
+  (let [arg-slot-index (+ (instruction :start) arg-index)
+        value-in-arg-slot (code arg-slot-index)
+        arg-mode (-> instruction :modes (get ,,, (dec arg-index)))]
+    (if (= arg-mode :immediate)
+      value-in-arg-slot
+      (code value-in-arg-slot))))
+
+(defn addition [code instruction io]
+  (let [instr-index (-> instruction :start)
+        arg1 (get-arg code instruction 1)
+        arg2 (get-arg code instruction 2)]
+    {:output-to (-> (+ instr-index 3) code)
+     :next-instruction (+ instr-index 4)
+     :result (+ arg1 arg2)}))
+
+(defn multiplication [code instruction io]
+  (let [instr-index (-> instruction :start)
+        arg1 (get-arg code instruction 1)
+        arg2 (get-arg code instruction 2)]
+    {:output-to (-> (+ instr-index 3) code)
+     :next-instruction (+ instr-index 4)
+     :result (* arg1 arg2)}))
+
+(defn input [code instruction io]
+  (let [instr-index (-> instruction :start)
+        {[val-in & rest-in] :in out :out} io]
+    {:output-to (-> (inc instr-index) code)
+     :next-instruction (+ instr-index 2)
+     :result val-in
+     :io {:in rest-in :out out}}))
+
+(defn output [code instruction io]
+  (let [instr-index (-> instruction :start)
+        {in :in out :out} io
+        arg (get-arg code instruction 1)]
+    {:next-instruction (+ instr-index 2)
+     :io {:in in :out (cons arg out)}}))
+
+(defn jump-if [code instruction predicate]
+  (let [instr-index (-> instruction :start)
+        arg1 (get-arg code instruction 1)
+        arg2 (get-arg code instruction 2)]
+    (if (predicate arg1)
+      {:next-instruction arg2}
+      {:next-instruction (+ instr-index 3)})))
+
+(defn jump-if-true [code instruction io]
+  (jump-if code instruction #(not= % 0)))
+
+(defn jump-if-false [code instruction io]
+  (jump-if code instruction #(= % 0)))
+
+(defn save-boolean [code instruction test]
+  (let [instr-index (-> instruction :start)
+        arg1 (get-arg code instruction 1)
+        arg2 (get-arg code instruction 2)]
+    {:output-to (-> (+ instr-index 3) code)
+     :next-instruction (+ instr-index 4)
+     :result (if (test arg1 arg2) 1 0)}))
+
+(defn less-than [code instruction io]
+  (save-boolean code instruction #(< %1 %2)))
+
+(defn equals [code instruction io]
+  (save-boolean code instruction #(= %1 %2)))
+
+(def operation-map {1 addition
+                    2 multiplication
+                    3 input
+                    4 output
+                    5 jump-if-true
+                    6 jump-if-false
+                    7 less-than
+                    8 equals})
+
+(defn execute
+  ([code inputs]
+   (execute code 0 {:in (or inputs '()) :out '()}))
+  ([code index io]
+   (let [op-code (get code index)]
+     (if (= 99 op-code)
+       (-> io :out)
+       (let [instruction (read-instruction code index)
+             operation (-> instruction :op-code operation-map)
+             exec-result (operation code instruction io)
+             next-instr-slot (-> exec-result :next-instruction)
+             output-slot (-> exec-result :output-to)
+             result (-> exec-result :result)
+             used-io (-> exec-result :io)]
+         (execute
+           (if result
+             (assoc code output-slot result)
+             code)
+           next-instr-slot
+           (or used-io io)))))))
+
+(defn create-amp [intcode phase]
+  (fn [input] (->>
+                (list phase input)
+                (execute intcode)
+                first)))
+
+(defn run-amp-sequence [intcode phases]
+  (let [amps (map #(create-amp intcode %) phases)]
+    (reduce
+      (fn [amp-input amp] (amp amp-input))
+      0
+      amps)))
+
+(def phase-generator
+  (clojure.math.combinatorics/permutations '(0 1 2 3 4)))
+
+(defn part-1 []
+  (->>
+    phase-generator
+    (map #(run-amp-sequence code %))
+    (apply max)))
+
+(defn part-2 []
+  "todo")
+
+(defn -main
+  [& args]
+  (println (str "Part 1: " (part-1)))
+  (println (str "Part 2: " (part-2))))
