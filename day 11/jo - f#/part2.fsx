@@ -111,5 +111,17 @@ let t  () =
 
 let input = System.IO.File.ReadAllText(__SOURCE_DIRECTORY__ + "\input.txt")
 let p : IntCode.Program = input.Split([|','|]) |> Seq.map int64 |> Seq.toList
-let r = run IntCode.run <| start p 0L
-r.colors |> Map.count
+let r = run IntCode.run <| start p 1L
+
+let xmax = r.colors |> Map.toList |> List.map (fun x -> x |> fst) |> List.map (fun l -> l.x) |> List.max
+let ymax = r.colors |> Map.toList |> List.map (fun x -> x |> fst) |> List.map (fun l -> l.y) |> List.max
+
+let foo : unit list = 
+    seq {
+        for y in [0..ymax] do
+            printfn ""
+            for x in [0 .. xmax] do 
+                let loc = { x = x; y = y }
+                let color = r.colors |> Map.tryFind loc |> (fun c -> defaultArg c 0L) |> (fun c -> if c = 0L then "X" else " ")
+                printf "%s" color
+    } |> List.ofSeq

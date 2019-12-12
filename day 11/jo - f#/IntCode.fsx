@@ -147,6 +147,7 @@ module IntCode =
         let v = valueAt state.program state.relativeBase
         match instruction with
         | Halt -> 
+            printfn "HALTIIIIIIING"
             { state with 
                 mode = Finished
                 pointer = state.pointer + pointerIncrement instruction }
