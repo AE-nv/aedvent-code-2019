@@ -56,17 +56,22 @@ let rec takeSteps s moons =
     if s = 0 then moons
     else takeSteps (s - 1) (step moons)
 
-let periodOf moons =
-    let rec run moons todos gen acc =
-        if todos |> List.isEmpty then acc
-        else
-            if gen % 1_000_000L = 0L then printfn "%A" gen
-            let next = step moons
-            let dones = todos |> List.filter (fun m -> m = (next |> Map.find m.id))
-            let periods = dones |> List.map (fun m -> m.id, gen)
-            if periods |> List.isEmpty |> not then printfn "FOUND SOMETHING %A" periods
-            run next (todos |> List.except dones) (gen + 1L) (List.append periods acc)
-    run moons (moons |> Map.toList |> List.map snd)  1L []
+let periods moons =
+    let xs ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.x))
+    let ys ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.y))
+    let zs ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.z))
+
+    let rec run dim init moons gen =
+        let next = step moons
+        if dim next = init
+        then gen
+        else    
+            run dim init next (gen + 1L)
+    
+    let x = run xs (xs moons) moons 1L
+    let y = run ys (ys moons) moons 1L
+    let z = run zs (zs moons) moons 1L
+    [x;y;z]
 
 let lcm x y = 
     let rec gcd x y = if y = 0L then abs x else gcd y (x % y)
@@ -89,8 +94,7 @@ let input = [ init 0 -9L 10L -1L;init 1 -14L -8L 14L;init 2 1L 5L 6L;init 3  -19
 //|> List.map (fun m -> m.id, m) |> Map.ofList 
 //|> takeSteps 100
 
-big_example
+example
 |> List.map (fun m -> m.id, m) |> Map.ofList
-|> periodOf
-|> List.map snd
+|> periods
 |> List.fold lcm 1L
