@@ -60,9 +60,27 @@ func (m Moon) totalEnergy() int{
 
     return potential * kinetic
 }
+func (m Moon) hash() string{
+    value := strconv.Itoa(m.x) + "|"
+    value += strconv.Itoa(m.y) + "|"
+    value += strconv.Itoa(m.z) + "|"
+    value += strconv.Itoa(m.dx) + "|"
+    value += strconv.Itoa(m.dy) + "|"
+    value += strconv.Itoa(m.dz)
+    return value
+}
 
 
-func run(input string, steps int) int{
+func hash(moons []*Moon) string {
+    value := ""
+    for _, moon := range moons {
+        value += "><" + moon.hash()
+    }
+    return value
+}
+
+
+func part1(input string, steps int) int{
     moons := parseInput(input)
 
     for step := 0; step < steps ; step++ {
@@ -89,12 +107,7 @@ func run(input string, steps int) int{
             }
         }
 
-        //fmt.Println(step)
-        for _, moon := range moons {
-            moon.move()
-            //fmt.Println(moon)
-        }
-        //fmt.Println()
+        for _, moon := range moons { moon.move() }
     }
 
     energy := 0
@@ -105,6 +118,51 @@ func run(input string, steps int) int{
 
 }
 
+func search(input string) int {
+    moons := parseInput(input)
+
+    hash_value := hash(moons)
+    seen := map[string]bool{
+        hash_value: true,
+    }
+    fmt.Println(hash_value)
+
+    step := 0
+    for true {
+        step++
+        for i, moona := range moons {
+            for j, moonb := range moons {
+                if i == j { continue }
+                if moona.x > moonb.x {
+                    moona.dx--
+                } else if moona.x < moonb.x {
+                    moona.dx++
+                }
+
+                if moona.y > moonb.y {
+                    moona.dy--
+                } else if moona.y < moonb.y {
+                    moona.dy++
+                }
+
+                if moona.z > moonb.z {
+                    moona.dz--
+                } else if moona.z < moonb.z {
+                    moona.dz++
+                }
+            }
+        }
+
+        for _, moon := range moons { moon.move() }
+        hash_value = hash(moons)
+        if _, ex := seen[hash_value]; ex {
+            return step
+        }
+        seen[hash_value] = true
+    }
+    return step
+}
+
 
 
 func main(){
@@ -113,16 +171,26 @@ func main(){
 <x=2, y=-10, z=-7>
 <x=4, y=-8, z=8>
 <x=3, y=5, z=-1>`
-    fmt.Println(run(input, 10))
+    fmt.Println(part1(input, 10))
 
     input = ` <x=-8, y=-10, z=0>
 <x=5, y=5, z=10>
 <x=2, y=-7, z=3>
 <x=9, y=-8, z=-3>`
-    fmt.Println(run(input, 100))
+    fmt.Println(part1(input, 100))
 
 
     input = readInput("input.txt")
-    fmt.Println(run(input, 1000))
+    fmt.Println(part1(input, 1000))
+
+
+    input = `<x=-1, y=0, z=2>
+<x=2, y=-10, z=-7>
+<x=4, y=-8, z=8>
+<x=3, y=5, z=-1>`
+    fmt.Println(search(input))
+
+    input = readInput("input.txt")
+    fmt.Println(search(input))
 
 }
