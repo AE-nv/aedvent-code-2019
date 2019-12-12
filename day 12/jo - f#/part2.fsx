@@ -57,9 +57,9 @@ let rec takeSteps s moons =
     else takeSteps (s - 1) (step moons)
 
 let periods moons =
-    let xs ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.x))
-    let ys ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.y))
-    let zs ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.z))
+    let xs ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.x, m.velocity.x))
+    let ys ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.y, m.velocity.y))
+    let zs ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.z, m.velocity.z))
 
     let rec run dim init moons gen =
         let next = step moons
@@ -94,7 +94,7 @@ let input = [ init 0 -9L 10L -1L;init 1 -14L -8L 14L;init 2 1L 5L 6L;init 3  -19
 //|> List.map (fun m -> m.id, m) |> Map.ofList 
 //|> takeSteps 100
 
-example
+input
 |> List.map (fun m -> m.id, m) |> Map.ofList
 |> periods
 |> List.fold lcm 1L
