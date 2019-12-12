@@ -1,7 +1,7 @@
-type Vector = {x : int; y : int; z : int }
+type Vector = {x : int64; y : int64; z : int64 }
 type Moon = { id : int; position : Vector; velocity : Vector }
 
-let init id x y z = { id = id; position = { x = x; y = y; z = z}; velocity = { x =0; y = 0; z = 0 }}
+let init id x y z = { id = id; position = { x = x; y = y; z = z}; velocity = { x =0L; y = 0L; z = 0L }}
 
 let rec pairs = 
     function
@@ -13,9 +13,9 @@ let rec pairs =
 
 let gravity one other =
     let step a b =
-        if a = b then 0
-        elif a < b then 1
-        else -1
+        if a = b then 0L
+        elif a < b then 1L
+        else -1L
     { x = step one.x other.x
       y = step one.y other.y
       z = step one.z other.z }
@@ -56,53 +56,45 @@ let rec takeSteps s moons =
     if s = 0 then moons
     else takeSteps (s - 1) (step moons)
 
-let example = [
-    init 0 -1 0 2
-    init 1 2 -10 -7
-    init 2 4 -8 8
-    init 3 3 5 -1 ]
+let periods moons =
+    let xs ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.x, m.velocity.x))
+    let ys ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.y, m.velocity.y))
+    let zs ms = ms |> Map.toList |> List.map (fun (id,m) -> (id, m.position.z, m.velocity.z))
 
-let input = [ init 0 -9 10 -1;init 1 -14 -8 14;init 2 1 5 6;init 3  -19 7 8 ]
-
-let periodOf moons =
-    let rec run moons todos gen acc =
-        match todos with
-        | [] -> acc
-        | _ ->
-            if gen % 1_000_000L = 0L then printfn "%A" gen
-            let next = step moons
-            //TODO: redesign so we only simulate once instead of or every period
-            todos |> Map.map
-            let nm = next |> Map.find id
-            if moon = nm then 
-                printfn "FOUND A PERIOD: %d - %A" id gen
-                gen
-            else run next (gen + 1L)
-    run moons 1L
+    let rec run dim init moons gen =
+        let next = step moons
+        if dim next = init
+        then gen
+        else    
+            run dim init next (gen + 1L)
+    
+    let x = run xs (xs moons) moons 1L
+    let y = run ys (ys moons) moons 1L
+    let z = run zs (zs moons) moons 1L
+    [x;y;z]
 
 let lcm x y = 
     let rec gcd x y = if y = 0L then abs x else gcd y (x % y)
     x * y / (gcd x y)
 
+let example = [
+    init 0 -1L 0L 2L
+    init 1 2L -10L -7L
+    init 2 4L -8L 8L
+    init 3 3L 5L -1L ]
 let big_example = 
     [
-        init 0 -8 -10 0
-        init 1 5 5 10
-        init 2 2 -7 3
-        init 3 9 -8 -3 ]
+        init 0 -8L -10L 0L
+        init 1 5L 5L 10L
+        init 2 2L -7L 3L
+        init 3 9L -8L -3L ]
+let input = [ init 0 -9L 10L -1L;init 1 -14L -8L 14L;init 2 1L 5L 6L;init 3  -19L 7L 8L ]
 
-let moons = 
-    big_example
-    |> List.map (fun m -> m.id, m) |> Map.ofList
+//big_example 
+//|> List.map (fun m -> m.id, m) |> Map.ofList 
+//|> takeSteps 100
 
-
-[0..3] 
-|> List.map (fun id -> periodOf id moons)
+input
+|> List.map (fun m -> m.id, m) |> Map.ofList
+|> periods
 |> List.fold lcm 1L
-
-(*
-	<x=-9, y=10, z=-1>
-	<x=-14, y=-8, z=14>
-	<x=1, y=5, z=6>
-	<x=-19, y=7, z=8>
-*)
