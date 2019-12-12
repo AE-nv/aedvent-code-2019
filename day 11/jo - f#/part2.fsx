@@ -122,6 +122,8 @@ let foo : unit list =
             printfn ""
             for x in [0 .. xmax] do 
                 let loc = { x = x; y = y }
-                let color = r.colors |> Map.tryFind loc |> (fun c -> defaultArg c 0L) |> (fun c -> if c = 0L then "X" else " ")
+                let color = r.colors |> Map.tryFind loc |> (fun c -> defaultArg c 0L) |> (fun c -> if c = 0L then " " else "X")
                 printf "%s" color
     } |> List.ofSeq
+
+//FKEKCFRK
