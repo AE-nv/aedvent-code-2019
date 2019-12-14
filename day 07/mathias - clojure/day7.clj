@@ -1,98 +1,115 @@
 (ns aoc-2019.day7
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure.math.numeric-tower :as math]
-            [clojure.math.combinatorics :as combin]))
+    (:require [clojure.java.io :as io]
+      [clojure.string :as str]
+      [clojure.math.numeric-tower :as math]
+      [clojure.math.combinatorics :as combin]))
 
 (def line (->> "input-7.txt" io/resource io/reader slurp))
-(def code
+(def source-code
   (->>
     (str/split line #",")
     (map read-string)
     (into [])))
 
 (defn read-operation-code [instruction] (mod instruction 100))
+
 (defn read-param-mode
-  "Extracts the mode of the given parameter (1 based index) by applying a modifier (power of 10) and a mod operation"
-  [instruction param-number]
-  (let [modifier (math/expt 10 (inc param-number))]
-    (case (mod (int (/ instruction modifier)) 10)
-      0 :position
-      1 :immediate)))
-(defn read-instruction [code index]
-  (let [instr-code (code index)]
-    {:op-code (read-operation-code instr-code)
-     :start index
-     :modes (vector
-              (read-param-mode instr-code 1)
-              (read-param-mode instr-code 2)
-              (read-param-mode instr-code 3))}))
+      "Extracts the mode of the given parameter (1 based index) by applying a modifier (power of 10) and a mod operation"
+      [instruction param-number]
+      (let [modifier (math/expt 10 (inc param-number))]
+           (case (mod (int (/ instruction modifier)) 10)
+                 0 :position
+                 1 :immediate)))
+
+(defn read-next-instruction [state]
+      (let [code (-> state :code)
+            instr-pointer (-> state :next-instruction)
+            instr-code (code instr-pointer)]
+           {:op-code (read-operation-code instr-code)
+            :start instr-pointer
+            :modes (vector
+                     (read-param-mode instr-code 1)
+                     (read-param-mode instr-code 2)
+                     (read-param-mode instr-code 3))}))
+
 (defn get-arg [code instruction arg-index]
-  (let [arg-slot-index (+ (instruction :start) arg-index)
-        value-in-arg-slot (code arg-slot-index)
-        arg-mode (-> instruction :modes (get ,,, (dec arg-index)))]
-    (if (= arg-mode :immediate)
-      value-in-arg-slot
-      (code value-in-arg-slot))))
+      (let [arg-slot-index (+ (instruction :start) arg-index)
+            value-in-arg-slot (code arg-slot-index)
+            arg-mode (-> instruction :modes (get ,,, (dec arg-index)))]
+           (if (= arg-mode :immediate)
+             value-in-arg-slot
+             (code value-in-arg-slot))))
 
-(defn addition [code instruction io]
-  (let [instr-index (-> instruction :start)
-        arg1 (get-arg code instruction 1)
-        arg2 (get-arg code instruction 2)]
-    {:output-to (-> (+ instr-index 3) code)
-     :next-instruction (+ instr-index 4)
-     :result (+ arg1 arg2)}))
+(defn binary-operation [func instruction state]
+      (let [code (-> state :code)
+            instr-index (-> instruction :start)
+            arg1 (get-arg code instruction 1)
+            arg2 (get-arg code instruction 2)
+            out-slot (-> (+ instr-index 3) code)]
+           (-> state
+               (assoc-in ,,, [:code out-slot] (func arg1 arg2))
+               (assoc ,,, :next-instruction (+ instr-index 4)))))
 
-(defn multiplication [code instruction io]
-  (let [instr-index (-> instruction :start)
-        arg1 (get-arg code instruction 1)
-        arg2 (get-arg code instruction 2)]
-    {:output-to (-> (+ instr-index 3) code)
-     :next-instruction (+ instr-index 4)
-     :result (* arg1 arg2)}))
+(defn addition [instruction state]
+      (binary-operation + instruction state))
 
-(defn input [code instruction io]
-  (let [instr-index (-> instruction :start)
-        {[val-in & rest-in] :in out :out} io]
-    {:output-to (-> (inc instr-index) code)
-     :next-instruction (+ instr-index 2)
-     :result val-in
-     :io {:in rest-in :out out}}))
+(defn multiplication [instruction state]
+      (binary-operation * instruction state))
 
-(defn output [code instruction io]
-  (let [instr-index (-> instruction :start)
-        {in :in out :out} io
-        arg (get-arg code instruction 1)]
-    {:next-instruction (+ instr-index 2)
-     :io {:in in :out (cons arg out)}}))
+(defn input [instruction state]
+      (let [code (-> state :code)
+            instr-index (-> instruction :start)
+            [val-in & rest-in] (-> state :io :in)
+            out-slot (-> (inc instr-index) code)]
+           (if (nil? val-in)
+             (assoc state :status :halted)
+             (-> state
+                 (assoc-in ,,, [:code out-slot] val-in)
+                 (assoc-in ,,, [:io :in] rest-in)
+                 (assoc ,,, :next-instruction (+ instr-index 2))))))
 
-(defn jump-if [code instruction predicate]
-  (let [instr-index (-> instruction :start)
-        arg1 (get-arg code instruction 1)
-        arg2 (get-arg code instruction 2)]
-    (if (predicate arg1)
-      {:next-instruction arg2}
-      {:next-instruction (+ instr-index 3)})))
+(defn output [instruction state]
+      (let [code (-> state :code)
+            instr-index (-> instruction :start)
+            out (-> state :io :out)
+            arg (get-arg code instruction 1)]
+           (-> state
+               (assoc-in ,,, [:io :out] (conj out arg))
+               (assoc ,,, :next-instruction (+ instr-index 2)))))
 
-(defn jump-if-true [code instruction io]
-  (jump-if code instruction #(not= % 0)))
+(defn jump-if [predicate instruction state]
+      (let [code (-> state :code)
+            instr-index (-> instruction :start)
+            arg1 (get-arg code instruction 1)
+            arg2 (get-arg code instruction 2)]
+           (if (predicate arg1)
+             (assoc state :next-instruction arg2)
+             (assoc state :next-instruction (+ instr-index 3)))))
 
-(defn jump-if-false [code instruction io]
-  (jump-if code instruction #(= % 0)))
+(defn jump-if-true [instruction state]
+      (jump-if #(not= % 0) instruction state))
 
-(defn save-boolean [code instruction test]
-  (let [instr-index (-> instruction :start)
-        arg1 (get-arg code instruction 1)
-        arg2 (get-arg code instruction 2)]
-    {:output-to (-> (+ instr-index 3) code)
-     :next-instruction (+ instr-index 4)
-     :result (if (test arg1 arg2) 1 0)}))
+(defn jump-if-false [instruction state]
+      (jump-if #(= % 0) instruction state))
 
-(defn less-than [code instruction io]
-  (save-boolean code instruction #(< %1 %2)))
+(defn save-boolean [test instruction state]
+      (let [code (-> state :code)
+            instr-index (-> instruction :start)
+            arg1 (get-arg code instruction 1)
+            arg2 (get-arg code instruction 2)
+            out-slot (-> (+ instr-index 3) code)]
+           (-> state
+               (assoc-in ,,, [:code out-slot] (if (test arg1 arg2) 1 0))
+               (assoc ,,, :next-instruction (+ instr-index 4)))))
 
-(defn equals [code instruction io]
-  (save-boolean code instruction #(= %1 %2)))
+(defn less-than [instruction state]
+      (save-boolean #(< %1 %2) instruction state))
+
+(defn equals [instruction state]
+      (save-boolean #(= %1 %2) instruction state))
+
+(defn terminate [instruction state]
+      (assoc state :status :terminated))
 
 (def operation-map {1 addition
                     2 multiplication
@@ -101,55 +118,76 @@
                     5 jump-if-true
                     6 jump-if-false
                     7 less-than
-                    8 equals})
+                    8 equals
+                    99 terminate})
+
+(defn create-computer [code]
+      {:code code
+       :next-instruction 0
+       :io {:in []
+            :out []}
+       :status :ready})
+
+(defn feed-computer [state inputs]
+      (let [current-in (-> state :io :in)
+            new-in (if (seq current-in) (apply conj current-in inputs) (apply vector inputs))]
+           (-> state
+               (assoc ,,, :status :ready)
+               (assoc-in ,,, [:io :in] new-in))))
 
 (defn execute
-  ([code inputs]
-   (execute code 0 {:in (or inputs '()) :out '()}))
-  ([code index io]
-   (let [op-code (get code index)]
-     (if (= 99 op-code)
-       (-> io :out)
-       (let [instruction (read-instruction code index)
-             operation (-> instruction :op-code operation-map)
-             exec-result (operation code instruction io)
-             next-instr-slot (-> exec-result :next-instruction)
-             output-slot (-> exec-result :output-to)
-             result (-> exec-result :result)
-             used-io (-> exec-result :io)]
-         (execute
-           (if result
-             (assoc code output-slot result)
-             code)
-           next-instr-slot
-           (or used-io io)))))))
+      [state]
+      (let [status (-> state :status)
+            instruction (read-next-instruction state)]
+           (if (-> #{:halted :terminated} status)
+             state
+             (let [operation (-> instruction :op-code operation-map)
+                   result (operation instruction state)]
+                  (execute result)))))
 
 (defn create-amp [intcode phase]
-  (fn [input] (->>
-                (list phase input)
-                (execute intcode)
-                first)))
+      (->
+        (create-computer intcode)
+        (feed-computer ,,, [phase])))
 
-(defn run-amp-sequence [intcode phases]
-  (let [amps (map #(create-amp intcode %) phases)]
-    (reduce
-      (fn [amp-input amp] (amp amp-input))
-      0
-      amps)))
+(defn amp-sequence-for [intcode phases]
+      (->> phases
+           (map #(create-amp intcode %))
+           (apply vector)))
 
-(def phase-generator
-  (clojure.math.combinatorics/permutations '(0 1 2 3 4)))
+(defn run-single-amp-sequence [start-input amps]
+      (reduce
+        (fn [running-amps amp]
+            (let [to-run (if (seq running-amps)
+                           (feed-computer amp [(-> running-amps first :io :out last)])
+                           (feed-computer amp [start-input]))]
+                 (cons (execute to-run) running-amps)))
+        '()
+        amps))
+
+(defn run-amp-sequence-loop [[last-amp & rest :as amps-reversed]]
+      (let [output-last-amp (-> last-amp :io :out last)]
+           (if (= (-> last-amp :status) :terminated)
+             output-last-amp
+             (run-amp-sequence-loop (run-single-amp-sequence output-last-amp (reverse amps-reversed))))))
+
+(defn start [amps]
+      (run-amp-sequence-loop (run-single-amp-sequence 0 amps)))
+
+(defn run-phases [phase-generator]
+      (->>
+        phase-generator
+        (map #(amp-sequence-for source-code %))
+        (map start)
+        (apply max)))
 
 (defn part-1 []
-  (->>
-    phase-generator
-    (map #(run-amp-sequence code %))
-    (apply max)))
+      (run-phases (combin/permutations '(0 1 2 3 4))))
 
 (defn part-2 []
-  "todo")
+      (run-phases (combin/permutations '(5 6 7 8 9))))
 
 (defn -main
-  [& args]
-  (println (str "Part 1: " (part-1)))
-  (println (str "Part 2: " (part-2))))
+      [& args]
+      (println (str "Part 1: " (part-1)))
+      (println (str "Part 2: " (part-2))))
