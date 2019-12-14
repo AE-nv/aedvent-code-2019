@@ -82,7 +82,14 @@ func main(){
         } else if input {
             board.Print([]string{ " ", "|", "#", "-", "o", })
             fmt.Println("input", "bal:", bal_x, bal_y, "paddle:", paddle_x, paddle_y)
-            program.setInput(1)
+
+            if paddle_x < bal_x {
+                program.setInput(1)
+            } else if paddle_x > bal_x {
+                program.setInput(-1)
+            } else {
+                program.setInput(0)
+            }
         } else if tile_id == 3 {
             paddle_x, paddle_y = x , y
             board.setValue(x,y,tile_id)
