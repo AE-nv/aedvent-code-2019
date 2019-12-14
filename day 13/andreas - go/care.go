@@ -43,8 +43,7 @@ func count(b Board) int {
     return count
 }
 
-
-func main(){
+func part1(){
     /*
     values := []int{1,2,3,6,5,4}
     board := handleOutput(values)
@@ -56,6 +55,47 @@ func main(){
     program := createProgram(input)
     values := getValues(program)
     board := handleOutput(values)
-    board.Print()
+    board.Print([]string{ " ", "|", "#", "-", "o", })
     fmt.Println(count(board))
+}
+
+
+
+
+func main(){
+    //part1()
+
+    program := createProgram(readInput("./input.txt"))
+    program.data[0] = 2
+    board := createBoard()
+
+    x, done, input := program.runInput()
+    y, done, input := program.runInput()
+    tile_id, done, input := program.runInput()
+    bal_x, bal_y := 0, 0
+    paddle_x, paddle_y := 0, 0
+
+    for ! done {
+
+        if x == -1 && y == 0 {
+            fmt.Println("score", tile_id)
+        } else if input {
+            board.Print([]string{ " ", "|", "#", "-", "o", })
+            fmt.Println("input", "bal:", bal_x, bal_y, "paddle:", paddle_x, paddle_y)
+            program.setInput(1)
+        } else if tile_id == 3 {
+            paddle_x, paddle_y = x , y
+            board.setValue(x,y,tile_id)
+        } else if tile_id == 4 {
+            bal_x, bal_y = x , y
+            board.setValue(x,y,tile_id)
+        } else {
+            board.setValue(x,y,tile_id)
+        }
+
+
+        x, done, input = program.runInput()
+        y, done, input = program.runInput()
+        tile_id, done, input = program.runInput()
+    }
 }

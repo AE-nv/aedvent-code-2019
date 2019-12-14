@@ -58,10 +58,13 @@ func (p *Program) store(param, value, param_mode int) {
         p.data[ p.relative_base + param ] = value
     }
 }
-func (p *Program) inputStream() int{
+func (p *Program) getInput() int{
     value := p.input_values[0]
     p.input_values = p.input_values[1:]
     return value
+}
+func (p *Program) setInput(value int) {
+    p.input_values = append(p.input_values, value)
 }
 
 func (p *Program) add(param_modi []int) {
@@ -79,7 +82,7 @@ func (p *Program) multiply(param_modi []int) {
     p.pos+=4
 }
 func (p *Program) input(param_modi []int) {
-    value := p.inputStream()
+    value := p.getInput()
     p.store(p.data[p.pos+1], value, param_modi[0])
     p.pos+=2
 }
@@ -161,4 +164,43 @@ func (p *Program) run() (int, bool) {
         }
     }
     return 0, true
+}
+func (p *Program) runInput() (int, bool, bool) {
+    var opcode int
+    var param_modi []int
+
+    for opcode != 99 {
+        opcode, param_modi = parseInstruction(p.data[p.pos])
+
+        if opcode == 1 {
+            p.add(param_modi)
+        } else if opcode == 2 {
+            p.multiply(param_modi)
+        } else if opcode == 3 {
+            if len(p.input_values) == 0 {
+                return -1, false, true
+            }
+            p.input(param_modi)
+        } else if opcode == 4 {
+            value := p.output(param_modi)
+            return value, false, false
+        } else if opcode == 5 {
+            p.jit(param_modi)
+        } else if opcode == 6 {
+            p.jif(param_modi)
+        } else if opcode == 7 {
+            p.lt(param_modi)
+        } else if opcode == 8 {
+            p.eq(param_modi)
+        } else if opcode == 9 {
+            p.relativeBase(param_modi)
+        } else if opcode == 99 {
+            return 0, true, false
+        } else {
+            fmt.Println("invalid opcode!", opcode, param_modi, p.pos)
+            opcode = 99
+            //panic("what just happend?!")
+        }
+    }
+    return 0, true, false
 }

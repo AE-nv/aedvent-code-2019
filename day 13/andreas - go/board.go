@@ -24,7 +24,7 @@ func (b *Board) setValue(x,y, val int){
     }
     b.data[y][x] = val
 }
-func (b Board) Print() {
+func (b Board) Print(symbols []string) {
     miny, maxy := 0, 0
     minx, maxx := 0, 0
 
@@ -40,7 +40,8 @@ func (b Board) Print() {
 
     for y := miny ; y <= maxy ; y++ {
         for x := minx ; x <= maxx ; x++ {
-            fmt.Print(b.getValue(x,y))
+            value := b.getValue(x,y)
+            fmt.Print(symbols[value])
         }
         fmt.Println()
     }
