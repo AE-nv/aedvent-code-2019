@@ -53,10 +53,24 @@ let location direction (x,y) =
     | East -> (x+1L,y)
     | West -> (x-1L,y)
 
-let parseDirection = function | "n" -> North | "e" -> East | "w" -> West | "s" -> South
+let parseDirection = function | "n" -> Some North | "e" -> Some East | "w" -> Some West | "s" -> Some South | _ -> None
+
+let rec getDirection state =
+    printfn "Next direction:"
+    let i = System.Console.ReadLine() 
+    if i = "dump" 
+    then 
+        printfn "%A" (state.map |> Map.toList |> List.iter (printfn "%A"))
+        getDirection state
+    else
+        match i |> parseDirection with
+        | Some d -> d
+        | None -> 
+            printfn "Unknown direction %A" i
+            getDirection state
 
 let tick program state =
-    let nextDirection = System.Console.ReadLine() |> parseDirection
+    let nextDirection = getDirection state
     let nextLocation = location nextDirection state.droid
     let nextProgram = IntCode.run { program with input = [toInput nextDirection]; output = []; mode = IntCode.Running }
     let statusCode = nextProgram.output |> List.head |> toStatusCode
