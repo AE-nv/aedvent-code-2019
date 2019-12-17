@@ -1,5 +1,6 @@
 #load "IntCode.fsx"
 open IntCode
+open System.Web.UI
 
 //IntCode.t ()
 
@@ -49,7 +50,8 @@ let bot = indexed |> Map.toList |> List.find (fun (_,b) -> b = '^') |> fst
 type Orientation = Up | Down | Left | Right
 type Location = int * int
 type Command = 
-    | Turn of Orientation
+    | TurnLeft
+    | TurnRight
     | Forward
 type State = { location : Location; orientation: Orientation; commands : Command list }
 
@@ -62,29 +64,29 @@ let nextLocation (x,y) =
     | Right -> (x+1, y)
 let turns =
     function
-    | Up -> [Left;Right]
-    | Down -> [Left;Right]
-    | Left -> [Up;Down]
-    | Right -> [Up;Down]
+    | Up -> [(TurnLeft, Left);(TurnRight, Right)]
+    | Down -> [(TurnRight, Left);(TurnLeft, Right)]
+    | Left -> [(TurnRight, Up);(TurnLeft,Down)]
+    | Right -> [(TurnLeft, Up); (TurnRight, Down)]
 
 
 let start = { location = bot; orientation = Up; commands = []}
 let rec go scaffolds state : State =
-    printfn "%A" state
+    //printfn "%A" state
     let n = nextLocation state.location state.orientation
     let fwd = scaffolds |> Map.tryFind n
     match fwd with
     | Some _ -> 
-        { state with location = n; commands = Forward :: state.commands }
+        { state with location = n; commands = Forward :: state.commands } |> go scaffolds
     | None ->
         let next_turns = 
             state.orientation 
             |> turns 
-            |> List.filter (fun t -> scaffolds |> Map.containsKey (nextLocation state.location t))
+            |> List.filter (fun (_,t) -> scaffolds |> Map.containsKey (nextLocation state.location t))
         match next_turns with
         | [] -> state
-        | [turn] -> { state with orientation = turn; commands = (Turn turn) :: state.commands }
+        | [command,turn] -> { state with orientation = turn; commands = command :: state.commands } |> go scaffolds
         | err -> failwithf "whoops %A" err
-    |> go scaffolds
 
-go scaffolds start
+let commands = go scaffolds start |> (fun s -> s.commands |> List.rev)
+//L6R8R12L6L8
