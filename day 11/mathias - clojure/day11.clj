@@ -169,8 +169,6 @@
             result (operation instruction state)]
         (recur result)))))
 
-;;(defn scan-surface [surface position]
-;;  (if (surface position) '(1) '(0)))
 (defn scan-surface [surface position]
   (if-let [floor-color (surface position)] (list floor-color) '(0)))
 
@@ -182,10 +180,6 @@
         comp-with-reset-out (assoc-in new-comp [:io :out] [])]
     [paint-inst comp-with-reset-out]))
 
-;;(defn paint [surface [position] [target-color]]
-;;  (if (= target-color 1)
-;;    (conj surface position)
-;;    (disj surface position)))
 (defn paint [surface [position _] [target-color _]]
   (assoc surface position target-color))
 
@@ -205,9 +199,9 @@
     orientation))
 
 (defn run-robot
-  ([]
+  ([starting-tile-color]
    (run-robot (-> source-code (create-computer ,,, 10000))
-              {}
+              {[0 0] starting-tile-color}
               [[0 0] :up]))
   ([computer surface orientation]
    (if (= (-> computer :status) :terminated)
@@ -216,10 +210,34 @@
        (recur next-comp (paint surface orientation paint-instr) (move-robot orientation paint-instr))))))
 
 (defn part-1 []
-  (count (run-robot)))
+  (count (run-robot 0)))
+
+(defn draw-line [start end y surface]
+  (reduce (fn [line x]
+            (if (->> [x y] surface (= 1))
+              (str line "X")
+              (str line " ")))
+          ""
+          (range start (inc end))))
+
+(defn decr-range [current limit]
+  (if (= current limit)
+    (list current)
+    (lazy-seq (cons current (decr-range (dec current) limit)))))
+
+(defn visualize [surface]
+  (let [painted (keys surface)
+        min-x (->> painted (map first) (apply min))
+        max-x (->> painted (map first) (apply max))
+        min-y (->> painted (map second) (apply min))
+        max-y (->> painted (map second) (apply max))]
+    (->> (decr-range max-y min-y)
+         (map #(draw-line min-x max-x % surface))
+         (map println))))
 
 (defn part-2 []
-  "todo")
+  (->> (run-robot 1)
+       visualize))
 
 (defn -main
   [& args]
